@@ -1,0 +1,8 @@
+dnspython
+Jinja2
+jsonschema
+python-magic
+PyYAML
+requests
+requests-toolbelt
+watchdog

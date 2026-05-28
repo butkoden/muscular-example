@@ -1,0 +1,21 @@
+<section class="page-head">
+  <h1>Админка</h1>
+  <form class="inline" method="post" action="/admin/logout">
+    <button type="submit">Выйти</button>
+  </form>
+</section>
+<section class="admin-tools">
+  <form method="post" action="/admin/password">
+    <h2>Сменить пароль</h2>
+    <input type="password" name="password" minlength="6" required>
+    <button type="submit">Сохранить</button>
+  </form>
+  <a class="button secondary" href="/admin/diagnostics">Диагностика сайта</a>
+</section>
+<section>
+  <h2>Бронирования</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Имя</th><th>Email</th><th>Тема</th><th>Начало</th><th>Статус</th></tr></thead>
+    <tbody>$rows</tbody>
+  </table>
+</section>
