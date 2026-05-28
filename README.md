@@ -64,3 +64,8 @@ PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butk
 
 When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior changes,
 this example should be updated in the same wave and verified by tests.
+
+## ValueObject example
+
+The project includes a pilot domain value object (`EmailAddress`) wired through
+`ValueObjectField` in `Booking.email` model field.
