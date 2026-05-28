@@ -197,7 +197,11 @@ def register_api(api):
             missing = [key for key in required if not data.get(key)]
             if missing:
                 return {"error": "Missing fields", "fields": missing}, 400
-            return {"booking": create_booking(data)}
+            try:
+                booking_payload = Booking(**data).as_dict()
+            except Exception as exc:
+                return {"error": "Validation failed", "details": str(exc)}, 400
+            return {"booking": create_booking(booking_payload)}
 
 
 app = ButkoInfoApp()

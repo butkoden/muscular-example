@@ -80,6 +80,21 @@ def test_booking_api_creates_record():
     assert b"Test slot" in body
 
 
+def test_booking_api_rejects_invalid_email():
+    payload = json.dumps({
+        "name": "Denis",
+        "email": "not-an-email",
+        "title": "Invalid",
+        "starts_at": "2026-06-01T10:00:00+03:00",
+        "ends_at": "2026-06-01T10:30:00+03:00",
+        "notes": "Should fail",
+    }).encode()
+
+    meta, body = call("/api/v1/bookings", method="POST", body=payload, content_type="application/json")
+    assert meta["status"].startswith("400")
+    assert b"Validation failed" in body
+
+
 def test_admin_login_and_diagnostics():
     body = b"password=admin"
     meta, _ = call(
