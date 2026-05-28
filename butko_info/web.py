@@ -5,18 +5,19 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 
 from muscles import ApplicationMeta, Configurator, Context
-from muscles import JsonRequestBody, JsonResponseBody, Model, Column, String, DateTime
-from muscles.wsgi.restful import RestApi
-from muscles.wsgi.wsgi import BaseResponse, WsgiStrategy, routes
+from muscles import JsonRequestBody, JsonResponseBody, Model, Column, String, DateTime, ValueObjectField
+from muscles.asgi.restful import RestApi
+from muscles.asgi.asgi import BaseResponse, AsgiStrategy, routes
 
 from .config import ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE
 from .db import check_admin_password, create_booking, diagnostics, init_db, list_bookings, set_admin_password
 from .templates import escape, page, render
+from .value_objects import EmailAddress
 
 
 class Booking(Model):
     name = Column(String)
-    email = Column(String)
+    email = Column(ValueObjectField(value_object_class=EmailAddress))
     title = Column(String)
     starts_at = Column(DateTime)
     ends_at = Column(DateTime)
@@ -44,7 +45,7 @@ class ButkoInfoApp(metaclass=ApplicationMeta):
         "api": {"prefix": "/api", "default_version": "v1", "controllers": {}},
     })
 
-    context = Context(WsgiStrategy, {})
+    context = Context(AsgiStrategy, {})
 
     def __init__(self):
         # Runtime-safe DB bootstrap. Fast path is cached inside db.init_db().

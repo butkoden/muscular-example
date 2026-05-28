@@ -67,6 +67,12 @@ For small projects, SQLite is enough:
 Define request/response models with Muscular schema classes and attach them to
 actions. Swagger/OpenAPI is generated automatically from these definitions.
 
+Value objects can be introduced gradually via `ValueObjectField`:
+
+- keep OpenAPI and routing contracts stable;
+- enforce domain invariants in dedicated value classes;
+- avoid spreading format checks across handlers.
+
 ## 6) CLI layer
 
 Use grouped commands for operational workflows:
