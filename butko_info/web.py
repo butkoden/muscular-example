@@ -45,7 +45,7 @@ class ButkoInfoApp(metaclass=ApplicationMeta):
         "api": {"prefix": "/api", "default_version": "v1", "controllers": {}},
     })
 
-    context = Context(AsgiStrategy, transport="asgi", params={})
+    context = Context(AsgiStrategy, params={})
 
     def __init__(self):
         # Runtime-safe DB bootstrap. Fast path is cached inside db.init_db().

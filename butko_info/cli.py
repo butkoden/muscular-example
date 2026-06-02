@@ -7,7 +7,7 @@ from .db import diagnostics, init_db, list_bookings, remove_booking, set_admin_p
 
 
 class CliApp(metaclass=ApplicationMeta):
-    context = Context(CliStrategy, transport="cli")
+    context = Context(CliStrategy)
 
     def run(self, *args):
         return self.context.execute(*expand_slash_args(args), shutup=False)
