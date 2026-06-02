@@ -35,7 +35,22 @@ project/
 
 1. `ApplicationMeta`
 2. статическая конфигурация (`Configurator`)
-3. стратегия выполнения (`Context(WsgiStrategy, {})`)
+3. стратегия выполнения (`Context(WsgiStrategy, params={})`)
+
+Совет: для entrypoint-роутеров с разными профилями удобно держать несколько
+контекстов внутри одного приложения:
+
+```python
+from muscles import ApplicationMeta, Context
+from muscles.asgi import AsgiStrategy
+
+
+class App(metaclass=ApplicationMeta):
+    web_public = Context(AsgiStrategy, params={"profile": "public"})
+    web_admin = Context(AsgiStrategy, params={"profile": "admin"})
+    # MCP-контексты можно привязать к выбранному web-профилю:
+    # mcp_public = Context(McpStrategy, transport=web_public)
+```
 
 Дальше регистрируйте:
 

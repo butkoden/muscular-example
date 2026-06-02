@@ -35,7 +35,21 @@ Create an application class with:
 
 1. `ApplicationMeta`
 2. static config (`Configurator`)
-3. runtime strategy (`Context(WsgiStrategy, {})`)
+3. runtime strategy (`Context(WsgiStrategy, params={})`)
+
+Tip: for multi-profile entrypoints you can declare several contexts in one app:
+
+```python
+from muscles import ApplicationMeta, Context
+from muscles.asgi import AsgiStrategy
+
+
+class App(metaclass=ApplicationMeta):
+    web_public = Context(AsgiStrategy, params={"profile": "public"})
+    web_admin = Context(AsgiStrategy, params={"profile": "admin"})
+    # MCP entrypoints can bind to selected web profiles:
+    # mcp_public = Context(McpStrategy, transport=web_public)
+```
 
 Then register:
 
