@@ -4,15 +4,22 @@ import json
 from http.cookies import SimpleCookie
 from pathlib import Path
 
-from muscles import ApplicationMeta, Configurator, Context
+from muscles import ApplicationMeta, BytesResponse, Configurator, Context, JsonResponse, NoContentResponse, cors
 from muscles import JsonRequestBody, JsonResponseBody, Model, Column, String, DateTime, ValueObjectField
-from muscles.asgi.restful import RestApi
-from muscles.asgi.asgi import BaseResponse, AsgiStrategy, routes
+from muscles.asgi import asgi_app
+from muscles.asgi.asgi import AsgiStrategy
+from muscles.asgi.restful import RestApi as AsgiRestApi
+from muscles.wsgi import wsgi_app
+from muscles.wsgi.wsgi import WsgiStrategy
+from muscles.wsgi.restful import RestApi as WsgiRestApi
 
 from .config import ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE
 from .db import check_admin_password, create_booking, diagnostics, init_db, list_bookings, set_admin_password
 from .templates import escape, page, render
 from .value_objects import EmailAddress
+
+
+API_DEMO_TOKEN = "demo-framework-token"
 
 
 class Booking(Model):
@@ -24,7 +31,7 @@ class Booking(Model):
     notes = Column(String)
 
 
-class ButkoInfoApp(metaclass=ApplicationMeta):
+class ButkoInfoApp:
     package_paths = []
     shutup = False
 
@@ -45,13 +52,13 @@ class ButkoInfoApp(metaclass=ApplicationMeta):
         "api": {"prefix": "/api", "default_version": "v1", "controllers": {}},
     })
 
-    context = Context(AsgiStrategy, params={})
-
-    def __init__(self):
+    def __init__(self, runtime):
         # Runtime-safe DB bootstrap. Fast path is cached inside db.init_db().
         init_db()
+        self.runtime = runtime
+        self.context = Context(runtime.strategy, params={})
         # API schema and Swagger metadata are declared once and reused by routes.
-        self.api = RestApi(
+        self.api = runtime.rest_api(
             prefix="/api/v1",
             version="1.0",
             name="ButkoInfoApi",
@@ -60,23 +67,69 @@ class ButkoInfoApp(metaclass=ApplicationMeta):
             contact_email="hello@butko.info",
             servers=[{"url": "http://localhost:8080"}],
         )
-        register_pages()
-        register_api(self.api)
+        register_pages(runtime.routes, runtime.response)
+        register_api(self.api, runtime.routes)
 
     def __call__(self, environ, start_response):
         self.context.set_param("environ", environ)
         self.context.set_param("start_response", start_response)
         return self.context.execute()
 
+    async def asgi_call(self, scope, receive, send):
+        result = self.context.execute(scope=scope, receive=receive, send=send)
+        if hasattr(result, "__await__"):
+            await result
 
-def html_response(body, status=200, headers=None):
+
+class ButkoInfoWsgiApp(ButkoInfoApp, metaclass=ApplicationMeta):
+    pass
+
+
+class ButkoInfoAsgiApp(ButkoInfoApp, metaclass=ApplicationMeta):
+    pass
+
+
+class RuntimeBinding:
+    def __init__(self, *, name, strategy, rest_api, routes, response):
+        self.name = name
+        self.strategy = strategy
+        self.rest_api = rest_api
+        self.routes = routes
+        self.response = response
+
+
+def wsgi_runtime():
+    from muscles.wsgi.wsgi import BaseResponse, routes
+
+    return RuntimeBinding(
+        name="wsgi",
+        strategy=WsgiStrategy,
+        rest_api=WsgiRestApi,
+        routes=routes,
+        response=BaseResponse,
+    )
+
+
+def asgi_runtime():
+    from muscles.asgi.asgi import BaseResponse, routes
+
+    return RuntimeBinding(
+        name="asgi",
+        strategy=AsgiStrategy,
+        rest_api=AsgiRestApi,
+        routes=routes,
+        response=BaseResponse,
+    )
+
+
+def html_response(response_class, body, status=200, headers=None):
     headers = headers or []
     headers.append(("Content-Type", "text/html; charset=utf-8"))
-    return BaseResponse(status=status, body=body, headers=headers)
+    return response_class(status=status, body=body, headers=headers)
 
 
-def redirect(location):
-    return BaseResponse(status=302, body="", headers=[("Location", location)])
+def redirect(response_class, location):
+    return response_class(status=302, body="", headers=[("Location", location)])
 
 
 def request_form(request):
@@ -88,9 +141,9 @@ def is_admin(request):
     return cookies.get(ADMIN_SESSION_COOKIE) == ADMIN_SESSION_VALUE
 
 
-def require_admin(request):
+def require_admin(response_class, request):
     if not is_admin(request):
-        return redirect("/admin/login")
+        return redirect(response_class, "/admin/login")
     return None
 
 
@@ -111,23 +164,23 @@ def clear_login_cookie(response):
     return response
 
 
-def register_pages():
+def register_pages(routes, response_class):
     # Static files are served by framework router, not by a separate web server.
     routes.add_static(str(Path(__file__).resolve().parent / "static"), prefix="/static", full_path=True)
 
     @routes.init("/", key="page.index", method="GET")
     def index(request):
         body = render("home.html")
-        return html_response(page("butko.info", body, active="home"))
+        return html_response(response_class, page("butko.info", body, active="home"))
 
     @routes.init("/resume", key="page.resume", method="GET")
     def resume(request):
         body = render("resume.html")
-        return html_response(page("Portfolio / Resume", body, active="resume"))
+        return html_response(response_class, page("Portfolio / Resume", body, active="resume"))
 
     @routes.init("/admin", key="admin.index", method="GET")
     def admin_index(request):
-        denied = require_admin(request)
+        denied = require_admin(response_class, request)
         if denied:
             return denied
         bookings = list_bookings()
@@ -137,45 +190,77 @@ def register_pages():
             for item in bookings
         ) or "<tr><td colspan='6'>No bookings yet</td></tr>"
         body = render("admin.html", rows=rows)
-        return html_response(page("Admin", body, active="admin"))
+        return html_response(response_class, page("Admin", body, active="admin"))
 
     @routes.init("/admin/login", key="admin.login", method="GET")
     def login_form(request):
-        return html_response(page("Admin login", render("login.html", error=""), active="admin"))
+        return html_response(response_class, page("Admin login", render("login.html", error=""), active="admin"))
 
     @routes.init("/admin/login", key="admin.login", method="POST")
     def login_submit(request):
         form = request_form(request)
         if check_admin_password(form.get("password", "")):
-            return set_login_cookie(redirect("/admin"))
-        return html_response(page("Admin login", render("login.html", error="Wrong password"), active="admin"), status=403)
+            return set_login_cookie(redirect(response_class, "/admin"))
+        return html_response(
+            response_class,
+            page("Admin login", render("login.html", error="Wrong password"), active="admin"),
+            status=403,
+        )
 
     @routes.init("/admin/logout", key="admin.logout", method="POST")
     def logout(request):
-        return clear_login_cookie(redirect("/"))
+        return clear_login_cookie(redirect(response_class, "/"))
 
     @routes.init("/admin/password", key="admin.password", method="POST")
     def password(request):
-        denied = require_admin(request)
+        denied = require_admin(response_class, request)
         if denied:
             return denied
         form = request_form(request)
         new_password = form.get("password", "").strip()
         if len(new_password) < 6:
-            return html_response(page("Admin", render("message.html", message="Password must be at least 6 characters."), active="admin"), status=400)
+            return html_response(
+                response_class,
+                page("Admin", render("message.html", message="Password must be at least 6 characters."), active="admin"),
+                status=400,
+            )
         set_admin_password(new_password)
-        return html_response(page("Admin", render("message.html", message="Password changed."), active="admin"))
+        return html_response(response_class, page("Admin", render("message.html", message="Password changed."), active="admin"))
 
     @routes.init("/admin/diagnostics", key="admin.diagnostics", method="GET")
     def diagnostics_page(request):
-        denied = require_admin(request)
+        denied = require_admin(response_class, request)
         if denied:
             return denied
         payload = json.dumps(diagnostics(), indent=2)
-        return html_response(page("Diagnostics", render("diagnostics.html", diagnostics=escape(payload)), active="admin"))
+        return html_response(
+            response_class,
+            page("Diagnostics", render("diagnostics.html", diagnostics=escape(payload)), active="admin"),
+        )
 
 
-def register_api(api):
+def header_value(request, name):
+    expected = name.lower()
+    for key, value in (request.headers or {}).items():
+        if str(key).lower() == expected:
+            return value
+    return None
+
+
+def require_api_key(request):
+    if header_value(request, "X-Api-Key") != API_DEMO_TOKEN:
+        return JsonResponse({"error": "unauthorized"}, status=401)
+    return None
+
+
+def register_api(api, routes):
+    api.use(cors(
+        allow_origins=["https://butko.info"],
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "X-Api-Key"],
+    ))
+    api.guard("/api/v1/protected/**", require_api_key)
+
     # Controller class is mounted under /api/v1/bookings via RestApi prefix + route.
     @api.controller("/bookings", description="Calendar slot bookings", summary="Bookings")
     class BookingsController:
@@ -203,5 +288,34 @@ def register_api(api):
                 return {"error": "Validation failed", "details": str(exc)}, 400
             return {"booking": create_booking(booking_payload)}
 
+    protected = api.group(
+        "/protected",
+        tags=["Framework primitives"],
+        security=["ApiKey"],
+        response={401: JsonResponseBody(description="Unauthorized")},
+    )
 
-app = ButkoInfoApp()
+    @protected.init("/login", method="post", auth=False, summary="Issue demo API token")
+    def login(request):
+        return JsonResponse({"token": API_DEMO_TOKEN})
+
+    @protected.init("/diagnostics", method="get", summary="Show protected diagnostics")
+    def api_diagnostics(request):
+        return JsonResponse({"diagnostics": diagnostics()})
+
+    @protected.init("/cache", method="delete", summary="Clear demo cache")
+    def clear_cache(request):
+        return NoContentResponse()
+
+    @protected.init("/asset", method="get", summary="Download demo bytes")
+    def asset(request):
+        return BytesResponse(b"muscular-example", content_type="text/plain")
+
+
+wsgi_project = ButkoInfoWsgiApp(wsgi_runtime())
+asgi_project = ButkoInfoAsgiApp(asgi_runtime())
+
+wsgi_application = wsgi_app(wsgi_project, context=wsgi_project.context)
+asgi_application = asgi_app(asgi_project, context=asgi_project.context)
+
+app = wsgi_application
