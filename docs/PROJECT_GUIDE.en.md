@@ -9,6 +9,7 @@ It shows how to combine:
 
 - `muscles` core (`ApplicationMeta`, `Configurator`, `Context`);
 - `muscles-wsgi` runtime for web/API;
+- `muscles-asgi` runtime with the same web/API contracts;
 - `muscles-cli` runtime for console automation.
 
 ## 1) Recommended project layout
@@ -35,20 +36,34 @@ Create an application class with:
 
 1. `ApplicationMeta`
 2. static config (`Configurator`)
-3. runtime strategy (`Context(WsgiStrategy, params={})`)
+3. runtime strategy (`Context(WsgiStrategy, params={})` or `Context(AsgiStrategy, params={})`)
 
-Tip: for multi-profile entrypoints you can declare several contexts in one app:
+This example keeps a shared base application and creates thin runtime-specific
+classes:
 
 ```python
 from muscles import ApplicationMeta, Context
-from muscles.asgi import AsgiStrategy
+from muscles.asgi import asgi_app
+from muscles.asgi.asgi import AsgiStrategy
+from muscles.wsgi import wsgi_app
+from muscles.wsgi.wsgi import WsgiStrategy
 
 
-class App(metaclass=ApplicationMeta):
-    web_public = Context(AsgiStrategy, params={"profile": "public"})
-    web_admin = Context(AsgiStrategy, params={"profile": "admin"})
-    # MCP entrypoints can bind to selected web profiles:
-    # mcp_public = Context(McpStrategy, transport=web_public)
+class App:
+    def __init__(self, strategy):
+        self.context = Context(strategy, params={})
+
+
+class WsgiApp(App, metaclass=ApplicationMeta):
+    pass
+
+
+class AsgiApp(App, metaclass=ApplicationMeta):
+    pass
+
+
+wsgi_application = wsgi_app(WsgiApp(WsgiStrategy), context="context")
+asgi_application = asgi_app(AsgiApp(AsgiStrategy), context="context")
 ```
 
 Then register:
@@ -87,6 +102,28 @@ Value objects can be introduced gradually via `ValueObjectField`:
 - enforce domain invariants in dedicated value classes;
 - avoid spreading format checks across handlers.
 
+Protected groups can still expose public endpoints by overriding auth on a
+single handler:
+
+```python
+api.guard("/api/v1/protected/**", require_api_key)
+protected = api.group("/protected", tags=["Framework primitives"], security=["ApiKey"])
+
+
+@protected.init("/login", method="post", auth=False)
+def login(request):
+    return JsonResponse({"token": API_DEMO_TOKEN})
+```
+
+Use core response helpers for protocol-neutral handlers:
+
+- `JsonResponse` for explicit JSON payloads;
+- `BytesResponse` for binary/text bytes;
+- `NoContentResponse` for `204 No Content`.
+
+The example also registers `cors(...)` on the API itinerary, so preflight and
+regular responses behave the same under WSGI and ASGI.
+
 ## 6) CLI layer
 
 Use grouped commands for operational workflows:
@@ -105,6 +142,7 @@ At minimum:
 - API booking flow test;
 - admin login + diagnostics test;
 - CLI command behavior test.
+- WSGI/ASGI parity test for guarded routes, auth override, CORS and response helpers.
 
 ## 8) How to create your own project from this template
 

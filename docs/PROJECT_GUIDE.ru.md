@@ -9,6 +9,7 @@
 
 - ядро `muscles` (`ApplicationMeta`, `Configurator`, `Context`);
 - web/api рантайм `muscles-wsgi`;
+- web/api рантайм `muscles-asgi` с теми же контрактами;
 - консольный рантайм `muscles-cli`.
 
 ## 1) Рекомендуемая структура проекта
@@ -35,21 +36,34 @@ project/
 
 1. `ApplicationMeta`
 2. статическая конфигурация (`Configurator`)
-3. стратегия выполнения (`Context(WsgiStrategy, params={})`)
+3. стратегия выполнения (`Context(WsgiStrategy, params={})` или `Context(AsgiStrategy, params={})`)
 
-Совет: для entrypoint-роутеров с разными профилями удобно держать несколько
-контекстов внутри одного приложения:
+В этом примере общая логика приложения вынесена в base-класс, а поверх него
+создаются тонкие runtime-specific классы:
 
 ```python
 from muscles import ApplicationMeta, Context
-from muscles.asgi import AsgiStrategy
+from muscles.asgi import asgi_app
+from muscles.asgi.asgi import AsgiStrategy
+from muscles.wsgi import wsgi_app
+from muscles.wsgi.wsgi import WsgiStrategy
 
 
-class App(metaclass=ApplicationMeta):
-    web_public = Context(AsgiStrategy, params={"profile": "public"})
-    web_admin = Context(AsgiStrategy, params={"profile": "admin"})
-    # MCP-контексты можно привязать к выбранному web-профилю:
-    # mcp_public = Context(McpStrategy, transport=web_public)
+class App:
+    def __init__(self, strategy):
+        self.context = Context(strategy, params={})
+
+
+class WsgiApp(App, metaclass=ApplicationMeta):
+    pass
+
+
+class AsgiApp(App, metaclass=ApplicationMeta):
+    pass
+
+
+wsgi_application = wsgi_app(WsgiApp(WsgiStrategy), context="context")
+asgi_application = asgi_app(AsgiApp(AsgiStrategy), context="context")
 ```
 
 Дальше регистрируйте:
@@ -87,6 +101,28 @@ ValueObject можно внедрять постепенно через `ValueOb
 - инварианты домена живут в отдельных value-классах;
 - валидация не размазывается по хендлерам.
 
+Защищенная группа может содержать публичный endpoint через локальное
+переопределение авторизации:
+
+```python
+api.guard("/api/v1/protected/**", require_api_key)
+protected = api.group("/protected", tags=["Framework primitives"], security=["ApiKey"])
+
+
+@protected.init("/login", method="post", auth=False)
+def login(request):
+    return JsonResponse({"token": API_DEMO_TOKEN})
+```
+
+Для protocol-neutral handlers используйте core helpers ответов:
+
+- `JsonResponse` для явного JSON;
+- `BytesResponse` для bytes/text payload;
+- `NoContentResponse` для `204 No Content`.
+
+В примере также подключен `cors(...)` на API itinerary, поэтому preflight и
+обычные ответы ведут себя одинаково под WSGI и ASGI.
+
 ## 6) CLI слой
 
 Группируйте операционные команды:
@@ -105,6 +141,7 @@ ValueObject можно внедрять постепенно через `ValueOb
 - тест API бронирования;
 - тест админ-логина и диагностики;
 - тест CLI команд.
+- parity-тест WSGI/ASGI для protected routes, auth override, CORS и response helpers.
 
 ## 8) Как создать свой проект на основе этого примера
 
