@@ -5,7 +5,7 @@ import pytest
 from muscles.asgi.testing import TestClient as AsgiTestClient
 from muscles.wsgi.testing import TestClient as WsgiTestClient
 
-from butko_info.web import asgi_application, wsgi_application
+from example_4.web import asgi_application, wsgi_application
 
 
 @pytest.fixture(params=[
@@ -27,7 +27,7 @@ def test_protected_endpoints_use_shared_openapi_security_scheme(client):
     assert security["name"] == "X-Api-Key"
 
 
-def test_route_registrar_keeps_login_public_but_secures_group_routes(client):
+def test_direct_framework_registration_keeps_login_public_but_secures_group_routes(client):
     schema = client.get("/api/v1/schema").json()
 
     assert "security" not in schema["paths"]["/api/v1/protected/login"]["post"]
@@ -38,7 +38,7 @@ def test_route_registrar_keeps_login_public_but_secures_group_routes(client):
     assert schema["paths"]["/api/v1/protected/method-key"]["post"]["security"] == [{"ApiKey": []}]
 
 
-def test_all_protected_routes_are_guarded_by_registrar_contract(client):
+def test_all_protected_routes_are_guarded_by_direct_framework_contract(client):
     for method, path in (
         ("GET", "/api/v1/protected/diagnostics"),
         ("DELETE", "/api/v1/protected/cache"),

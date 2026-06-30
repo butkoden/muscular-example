@@ -3,19 +3,20 @@ FROM ${PYTHON_IMAGE}
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/muscles/src:/app/muscles-wsgi/src:/app/muscles-cli/src:/app/butko-info-site
+ENV PYTHONPATH=/app/muscles/src:/app/muscles-wsgi/src:/app/muscles-asgi/src:/app/muscles-cli/src:/app/muscular-example
 
 WORKDIR /app
 
 COPY muscles ./muscles
 COPY muscles-wsgi ./muscles-wsgi
+COPY muscles-asgi ./muscles-asgi
 COPY muscles-cli ./muscles-cli
-COPY butko-info-site ./butko-info-site
+COPY muscular-example ./muscular-example
 
-WORKDIR /app/butko-info-site
+WORKDIR /app/muscular-example
 
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8080
 
-CMD ["python", "-m", "butko_info.server"]
+CMD ["python", "-m", "example_4.server"]

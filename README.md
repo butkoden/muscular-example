@@ -1,26 +1,104 @@
 # muscular-example
 
-Public example project based on `butko-info-site` that demonstrates how to build
-real Muscular applications with:
+Layered learning examples for the `muscles` framework.
 
-- website pages;
-- REST API with Swagger/OpenAPI;
-- interchangeable WSGI and ASGI runtime entrypoints;
-- route guards with endpoint-level auth override;
-- CORS middleware;
-- core response helpers (`JsonResponse`, `BytesResponse`, `NoContentResponse`);
-- route contract v2: one API path can expose different route keys per HTTP method;
-- CLI commands with nested routing;
-- SQLite persistence;
-- simple admin/auth flow.
+The repository is organized as a staircase. Start with `example_1`, then move
+one level up when the previous level feels clear.
 
-This repository is meant to stay in sync with the framework evolution.
+## Learning Levels
 
-## Quick Start
+### Level 1: minimal web route
+
+Package: `example_1`
+
+Shows the smallest useful WSGI application:
+
+- `ApplicationMeta`;
+- `Configurator`;
+- `Context(WsgiStrategy)`;
+- one `routes.init(...)` handler.
+
+Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli init-db
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m example_1.server
+```
+
+Open:
+
+- http://localhost:8080/example-1
+
+### Level 2: REST API and guards
+
+Package: `example_2`
+
+Adds a small REST API without extra project architecture:
+
+- page route through `routes.init(...)`;
+- public endpoint through `api.init(...)`;
+- protected API group through `api.group(...)`;
+- public login inside a protected group through `auth=False`;
+- guard through `api.guard(...)`;
+- CORS middleware through `api.use(cors(...))`;
+- OpenAPI schema.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m example_2.server
+```
+
+Try it:
+
+```bash
+curl http://localhost:8080/example-2
+curl http://localhost:8080/api/example-2/v1/messages
+curl -X POST http://localhost:8080/api/example-2/v1/protected/login
+curl http://localhost:8080/api/example-2/v1/protected/status
+curl -H 'X-Api-Key: example-2-token' http://localhost:8080/api/example-2/v1/protected/status
+```
+
+### Level 3: CLI commands
+
+Package: `example_3`
+
+Shows the CLI runtime separately from web code:
+
+- `Context(CliStrategy)`;
+- root command group;
+- nested command group;
+- slash-style command aliases.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/hello Student
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/tasks list
+```
+
+### Level 4: full application
+
+Package: `example_4`
+
+Combines the framework features in one realistic app:
+
+- pages, templates and static files;
+- REST API with controller classes and action decorators;
+- OpenAPI/Swagger;
+- WSGI and ASGI entrypoints with the same contracts;
+- API guards and endpoint-level auth override;
+- CORS middleware;
+- `JsonResponse`, `BytesResponse`, `NoContentResponse`;
+- one API path with different route keys per HTTP method;
+- SQLite persistence;
+- admin login and diagnostics;
+- CLI commands for operations.
+
+Run the web app:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.server
 ```
 
 Open:
@@ -32,27 +110,7 @@ Open:
 
 Default admin password: `admin`
 
-## Framework feature examples
-
-`butko_info.web` builds two equivalent applications:
-
-- `wsgi_application` for `muscles-wsgi`;
-- `asgi_application` for `muscles-asgi`.
-
-The REST API demonstrates a protected route group with a public endpoint inside
-the group:
-
-```python
-api.guard("/api/v1/protected/**", require_api_key)
-protected = api.group("/protected", tags=["Framework primitives"], security=["ApiKey"])
-
-
-@protected.init("/login", method="post", auth=False)
-def login(request):
-    return JsonResponse({"token": API_DEMO_TOKEN})
-```
-
-Try it through the WSGI server:
+Try protected API features:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/protected/login
@@ -64,46 +122,28 @@ curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected
 curl -X POST -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/method-key
 ```
 
-`/api/v1/protected/method-key` intentionally registers `GET` and `POST` on the
-same path with distinct route keys. This demonstrates the core route lookup
-change: ASGI and WSGI now select from all route records on the matched terminal
-node before filtering by method.
-
-The test suite runs the same protected API checks through both WSGI and ASGI
-test clients.
-
-## Docker
+Run level 4 CLI commands:
 
 ```bash
-docker compose up --build
-```
-
-If Docker Hub returns `429 Too Many Requests`, either authenticate:
-
-```bash
-docker login
-docker compose up --build
-```
-
-or override image source:
-
-```bash
-PYTHON_IMAGE=registry.example.com/python:3.12-slim docker compose up --build
-```
-
-## CLI examples
-
-```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli help
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings remove 1
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings/remove 1
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli help
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings remove 1
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings/remove 1
 ```
 
 ## Tests
 
 ```bash
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
+```
+
+The test suite checks every level and verifies that level 4 behaves the same
+through WSGI and ASGI test clients.
+
+## Docker
+
+```bash
+docker compose up --build
 ```
 
 ## Project Guides
@@ -113,10 +153,5 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli
 
 ## Sync Policy
 
-When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior changes,
-this example should be updated in the same wave and verified by tests.
-
-## ValueObject example
-
-The project includes a pilot domain value object (`EmailAddress`) wired through
-`ValueObjectField` in `Booking.email` model field.
+When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior
+changes, this example should be updated in the same wave and verified by tests.

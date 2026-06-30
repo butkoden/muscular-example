@@ -1,5 +1,5 @@
-from butko_info.cli import CliApp, expand_slash_args
-from butko_info.db import create_booking, get_booking, init_db
+from example_4.cli import CliApp, expand_slash_args
+from example_4.db import create_booking, get_booking, init_db
 
 
 def test_expand_slash_args():
@@ -12,10 +12,10 @@ def test_expand_slash_args():
 
 
 def test_bookings_remove_command(monkeypatch, tmp_path):
-    monkeypatch.setenv("BUTKO_INFO_DB", str(tmp_path / "test.sqlite3"))
+    monkeypatch.setenv("MUSCULAR_EXAMPLE_DB", str(tmp_path / "test.sqlite3"))
 
-    from butko_info import config
-    from butko_info import db
+    from example_4 import config
+    from example_4 import db
 
     config.DB_PATH = tmp_path / "test.sqlite3"
     db.DB_PATH = config.DB_PATH

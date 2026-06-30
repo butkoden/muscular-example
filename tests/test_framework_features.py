@@ -5,7 +5,7 @@ import pytest
 from muscles.asgi.testing import TestClient as AsgiTestClient
 from muscles.wsgi.testing import TestClient as WsgiTestClient
 
-from butko_info.web import API_DEMO_TOKEN, asgi_application, wsgi_application
+from example_4.web import API_DEMO_TOKEN, asgi_application, wsgi_application
 
 
 @pytest.fixture(params=[
@@ -63,13 +63,13 @@ def test_cors_preflight_is_available_for_api(client):
         "OPTIONS",
         "/api/v1/protected/diagnostics",
         headers={
-            "Origin": "https://butko.info",
+            "Origin": "https://example.local",
             "Access-Control-Request-Method": "GET",
         },
     )
 
     assert response.status_code == 204
-    assert response.headers["Access-Control-Allow-Origin"] == "https://butko.info"
+    assert response.headers["Access-Control-Allow-Origin"] == "https://example.local"
     assert "GET" in response.headers["Access-Control-Allow-Methods"]
 
 

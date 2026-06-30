@@ -2,17 +2,18 @@ services:
   web:
     build:
       context: ..
-      dockerfile: butko-info-site/Dockerfile
+      dockerfile: muscular-example/Dockerfile
       args:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
     ports:
       - "8080:8080"
     environment:
-      BUTKO_INFO_DB: /app/butko-info-site/data/butko_info.sqlite3
-      BUTKO_INFO_ADMIN_PASSWORD: admin
+      MUSCULAR_EXAMPLE_DB: /app/muscular-example/data/example_4.sqlite3
+      MUSCULAR_EXAMPLE_ADMIN_PASSWORD: admin
     volumes:
-      - ./data:/app/butko-info-site/data
+      - ./data:/app/muscular-example/data
       - ../muscles/src:/app/muscles/src
       - ../muscles-wsgi/src:/app/muscles-wsgi/src
+      - ../muscles-asgi/src:/app/muscles-asgi/src
       - ../muscles-cli/src:/app/muscles-cli/src
-      - .:/app/butko-info-site
+      - .:/app/muscular-example

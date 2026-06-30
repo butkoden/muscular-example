@@ -1,182 +1,95 @@
-# Muscular Project Guide (EN)
+# muscular-example Guide (EN)
 
 ## Purpose
 
-`muscular-example` is a practical reference for building full-stack projects on
-top of the Muscular ecosystem.
+`muscular-example` is now organized as a four-level learning staircase. Each
+level adds a small set of Muscles features, so new readers do not have to start
+from the full application.
 
-It shows how to combine:
+## Level 1: minimal web route
 
-- `muscles` core (`ApplicationMeta`, `Configurator`, `Context`);
-- `muscles-wsgi` runtime for web/API;
-- `muscles-asgi` runtime with the same web/API contracts;
-- `muscles-cli` runtime for console automation.
+Package: `example_1`
 
-## 1) Recommended project layout
+Learn:
 
-```text
-project/
-  your_app/
-    web.py
-    server.py
-    cli.py
-    db.py
-    templates.py
-    templates/
-    static/
-  tests/
-  pyproject.toml
-  docker-compose.yml
-  Dockerfile
+- `ApplicationMeta`;
+- `Configurator`;
+- `Context(WsgiStrategy)`;
+- direct `@routes.init(...)`;
+- returning a ready `BaseResponse`.
+
+This is the shortest example that shows how a request moves from a WSGI
+entrypoint to a handler function.
+
+## Level 2: REST API and guards
+
+Package: `example_2`
+
+Learn:
+
+- `routes.init(...)` for a normal page;
+- `api.init(...)` for a simple API endpoint;
+- `api.group(...)` for shared prefix/tags/security;
+- `group.init(..., auth=False)` for a public endpoint inside a protected group;
+- `api.guard(...)` for path-pattern protection;
+- `api.use(cors(...))` for middleware;
+- generated OpenAPI schema.
+
+Key idea: this level already has WSGI and ASGI variants, but API registration is
+written once.
+
+## Level 3: CLI
+
+Package: `example_3`
+
+Learn:
+
+- `Context(CliStrategy)`;
+- `@cli.group(...)`;
+- `@group.command(...)`;
+- nested groups;
+- both `example-3/tasks list` and `example-3 tasks list`.
+
+CLI is separated from web code so command routing can be studied on its own.
+
+## Level 4: full application
+
+Package: `example_4`
+
+Learn:
+
+- pages, templates, and static files;
+- `RestApi`;
+- `@api.controller(...)` and `@api.action(...)`;
+- `api.group(...)` and `group.init(...)`;
+- OpenAPI/Swagger;
+- shared WSGI/ASGI runtime binding;
+- CORS and guards;
+- `JsonResponse`, `BytesResponse`, `NoContentResponse`;
+- one API path with distinct route keys per HTTP method;
+- SQLite and a small admin area;
+- operational CLI commands.
+
+Important: `example_4` no longer uses a custom registration wrapper. The example
+now shows the framework APIs directly, so readers can see what Muscles itself
+provides.
+
+## Reading Order
+
+1. Start with `example_1/web.py`.
+2. Open `example_2/web.py` and compare a page route with API routes.
+3. Read `example_3/cli.py`.
+4. Finish with `example_4/web.py` and `example_4/cli.py`.
+
+The code intentionally uses Russian and English comments together: Russian
+explains the local learning context, English keeps framework terminology close
+to documentation and OpenAPI wording.
+
+## Checks
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
 ```
 
-## 2) Application bootstrap
-
-Create an application class with:
-
-1. `ApplicationMeta`
-2. static config (`Configurator`)
-3. runtime strategy (`Context(WsgiStrategy, params={})` or `Context(AsgiStrategy, params={})`)
-
-This example keeps a shared base application and creates thin runtime-specific
-classes:
-
-```python
-from muscles import ApplicationMeta, Context
-from muscles.asgi import asgi_app
-from muscles.asgi.asgi import AsgiStrategy
-from muscles.wsgi import wsgi_app
-from muscles.wsgi.wsgi import WsgiStrategy
-
-
-class App:
-    def __init__(self, strategy):
-        self.context = Context(strategy, params={})
-
-
-class WsgiApp(App, metaclass=ApplicationMeta):
-    pass
-
-
-class AsgiApp(App, metaclass=ApplicationMeta):
-    pass
-
-
-wsgi_application = wsgi_app(WsgiApp(WsgiStrategy), context="context")
-asgi_application = asgi_app(AsgiApp(AsgiStrategy), context="context")
-```
-
-Then register:
-
-- page routes (`routes.init(...)`);
-- API controllers (`RestApi`, `@api.controller`, `@api.action`);
-- startup actions (e.g., `init_db()`).
-
-## 3) Routing strategy
-
-Use route trees consistently:
-
-- Web: `/`, `/resume`, `/admin/...`
-- API: `/api/v1/...`
-- CLI: `bookings remove 1` and alias `bookings/remove 1`
-
-The same conceptual route hierarchy makes behavior predictable between web, api
-and console.
-
-## 4) Data layer
-
-For small projects, SQLite is enough:
-
-- initialize schema once per process/path;
-- keep WAL mode for better concurrency;
-- isolate DB operations in `db.py`.
-
-## 5) API and OpenAPI
-
-Define request/response models with Muscular schema classes and attach them to
-actions. Swagger/OpenAPI is generated automatically from these definitions.
-
-Value objects can be introduced gradually via `ValueObjectField`:
-
-- keep OpenAPI and routing contracts stable;
-- enforce domain invariants in dedicated value classes;
-- avoid spreading format checks across handlers.
-
-Protected groups can still expose public endpoints by overriding auth on a
-single handler:
-
-```python
-api.guard("/api/v1/protected/**", require_api_key)
-protected = api.group("/protected", tags=["Framework primitives"], security=["ApiKey"])
-
-
-@protected.init("/login", method="post", auth=False)
-def login(request):
-    return JsonResponse({"token": API_DEMO_TOKEN})
-```
-
-Use core response helpers for protocol-neutral handlers:
-
-- `JsonResponse` for explicit JSON payloads;
-- `BytesResponse` for binary/text bytes;
-- `NoContentResponse` for `204 No Content`.
-
-The example also registers `cors(...)` on the API itinerary, so preflight and
-regular responses behave the same under WSGI and ASGI.
-
-Muscles core now owns the shared backend pipeline for typed handler arguments,
-dependency resolution, guards, route-level security and middleware. WSGI and
-ASGI adapters use that pipeline, while this example verifies parity through the
-same API tests for both transports.
-
-Route contract v2 also allows one API path to use distinct route keys per HTTP
-method:
-
-```python
-@protected.init("/method-key", key="framework.method_key.read", method="get")
-def method_key_read(request):
-    return JsonResponse({"operation": "read"})
-
-
-@protected.init("/method-key", key="framework.method_key.write", method="post")
-def method_key_write(request):
-    return JsonResponse({"operation": "write"})
-```
-
-## 6) CLI layer
-
-Use grouped commands for operational workflows:
-
-- `init-db`
-- `bookings list`
-- `bookings remove <id>`
-- `diagnostics`
-- `set-password`
-
-## 7) Testing baseline
-
-At minimum:
-
-- smoke test for pages/static/swagger/schema;
-- API booking flow test;
-- admin login + diagnostics test;
-- CLI command behavior test.
-- WSGI/ASGI parity test for guarded routes, auth override, CORS, response helpers
-  and distinct route keys on the same path.
-
-## 8) How to create your own project from this template
-
-1. Copy this repo.
-2. Rename package and domain-specific templates/content.
-3. Keep architecture and tests.
-4. Update DB schema and API models for your domain.
-5. Add CI checks and deployment targets.
-
-## 9) Keeping this example up to date
-
-Whenever framework internals change:
-
-1. pull latest `muscles*` repos;
-2. run example tests;
-3. patch example usage where contracts changed;
-4. document migration notes in README/changelog.
+Tests cover all four levels and verify WSGI/ASGI parity for the full
+application.
