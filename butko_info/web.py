@@ -4,7 +4,7 @@ import json
 from http.cookies import SimpleCookie
 from pathlib import Path
 
-from muscles import ApplicationMeta, BytesResponse, Configurator, Context, JsonResponse, NoContentResponse, cors
+from muscles import ApplicationMeta, BytesResponse, Configurator, Context, JsonResponse, NoContentResponse
 from muscles import JsonRequestBody, JsonResponseBody, Model, Column, String, DateTime, ValueObjectField
 from muscles.asgi import asgi_app
 from muscles.asgi.asgi import AsgiStrategy
@@ -15,6 +15,7 @@ from muscles.wsgi.restful import RestApi as WsgiRestApi
 
 from .config import ADMIN_SESSION_COOKIE, ADMIN_SESSION_VALUE
 from .db import check_admin_password, create_booking, diagnostics, init_db, list_bookings, set_admin_password
+from .platform import RouteRegistrar
 from .templates import escape, page, render
 from .value_objects import EmailAddress
 
@@ -67,8 +68,19 @@ class ButkoInfoApp:
             contact_email="hello@butko.info",
             servers=[{"url": "http://localhost:8080"}],
         )
-        register_pages(runtime.routes, runtime.response)
-        register_api(self.api, runtime.routes)
+        self.route_registrar = RouteRegistrar(
+            routes=runtime.routes,
+            api=self.api,
+            response_class=runtime.response,
+            api_key_token=API_DEMO_TOKEN,
+        )
+        self.route_registrar.attach_api_contract(
+            allow_origins=["https://butko.info"],
+            allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+            allow_headers=["Content-Type", "X-Api-Key"],
+        )
+        register_pages(self.route_registrar)
+        register_api(self.route_registrar)
 
     def __call__(self, environ, start_response):
         self.context.set_param("environ", environ)
@@ -164,21 +176,23 @@ def clear_login_cookie(response):
     return response
 
 
-def register_pages(routes, response_class):
+def register_pages(registrar: RouteRegistrar):
     # Static files are served by framework router, not by a separate web server.
+    routes = registrar.routes
+    response_class = registrar.response_class
     routes.add_static(str(Path(__file__).resolve().parent / "static"), prefix="/static", full_path=True)
 
-    @routes.init("/", key="page.index", method="GET")
+    @registrar.page("/", key="page.index", method="GET")
     def index(request):
         body = render("home.html")
         return html_response(response_class, page("butko.info", body, active="home"))
 
-    @routes.init("/resume", key="page.resume", method="GET")
+    @registrar.page("/resume", key="page.resume", method="GET")
     def resume(request):
         body = render("resume.html")
         return html_response(response_class, page("Portfolio / Resume", body, active="resume"))
 
-    @routes.init("/admin", key="admin.index", method="GET")
+    @registrar.page("/admin", key="admin.index", method="GET")
     def admin_index(request):
         denied = require_admin(response_class, request)
         if denied:
@@ -192,11 +206,11 @@ def register_pages(routes, response_class):
         body = render("admin.html", rows=rows)
         return html_response(response_class, page("Admin", body, active="admin"))
 
-    @routes.init("/admin/login", key="admin.login", method="GET")
+    @registrar.page("/admin/login", key="admin.login", method="GET")
     def login_form(request):
         return html_response(response_class, page("Admin login", render("login.html", error=""), active="admin"))
 
-    @routes.init("/admin/login", key="admin.login", method="POST")
+    @registrar.page("/admin/login", key="admin.login", method="POST")
     def login_submit(request):
         form = request_form(request)
         if check_admin_password(form.get("password", "")):
@@ -207,11 +221,11 @@ def register_pages(routes, response_class):
             status=403,
         )
 
-    @routes.init("/admin/logout", key="admin.logout", method="POST")
+    @registrar.page("/admin/logout", key="admin.logout", method="POST")
     def logout(request):
         return clear_login_cookie(redirect(response_class, "/"))
 
-    @routes.init("/admin/password", key="admin.password", method="POST")
+    @registrar.page("/admin/password", key="admin.password", method="POST")
     def password(request):
         denied = require_admin(response_class, request)
         if denied:
@@ -227,7 +241,7 @@ def register_pages(routes, response_class):
         set_admin_password(new_password)
         return html_response(response_class, page("Admin", render("message.html", message="Password changed."), active="admin"))
 
-    @routes.init("/admin/diagnostics", key="admin.diagnostics", method="GET")
+    @registrar.page("/admin/diagnostics", key="admin.diagnostics", method="GET")
     def diagnostics_page(request):
         denied = require_admin(response_class, request)
         if denied:
@@ -239,30 +253,11 @@ def register_pages(routes, response_class):
         )
 
 
-def header_value(request, name):
-    expected = name.lower()
-    for key, value in (request.headers or {}).items():
-        if str(key).lower() == expected:
-            return value
-    return None
-
-
-def require_api_key(request):
-    if header_value(request, "X-Api-Key") != API_DEMO_TOKEN:
-        return JsonResponse({"error": "unauthorized"}, status=401)
-    return None
-
-
-def register_api(api, routes):
-    api.use(cors(
-        allow_origins=["https://butko.info"],
-        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "X-Api-Key"],
-    ))
-    api.guard("/api/v1/protected/**", require_api_key)
+def register_api(registrar: RouteRegistrar):
+    api = registrar.api
 
     # Controller class is mounted under /api/v1/bookings via RestApi prefix + route.
-    @api.controller("/bookings", description="Calendar slot bookings", summary="Bookings")
+    @registrar.api_controller("/bookings", description="Calendar slot bookings", summary="Bookings")
     class BookingsController:
         @api.action(
             method="get",
@@ -288,26 +283,47 @@ def register_api(api, routes):
                 return {"error": "Validation failed", "details": str(exc)}, 400
             return {"booking": create_booking(booking_payload)}
 
-    protected = api.group(
+    protected = registrar.api_group(
         "/protected",
         tags=["Framework primitives"],
-        security=["ApiKey"],
+        security=registrar.openapi_security,
         response={401: JsonResponseBody(description="Unauthorized")},
     )
 
-    @protected.init("/login", method="post", auth=False, summary="Issue demo API token")
+    @registrar.api_action(
+        protected,
+        "/login",
+        method="post",
+        auth=False,
+        summary="Issue demo API token",
+    )
     def login(request):
         return JsonResponse({"token": API_DEMO_TOKEN})
 
-    @protected.init("/diagnostics", method="get", summary="Show protected diagnostics")
+    @registrar.api_action(
+        protected,
+        "/diagnostics",
+        method="get",
+        summary="Show protected diagnostics",
+    )
     def api_diagnostics(request):
         return JsonResponse({"diagnostics": diagnostics()})
 
-    @protected.init("/cache", method="delete", summary="Clear demo cache")
+    @registrar.api_action(
+        protected,
+        "/cache",
+        method="delete",
+        summary="Clear demo cache",
+    )
     def clear_cache(request):
         return NoContentResponse()
 
-    @protected.init("/asset", method="get", summary="Download demo bytes")
+    @registrar.api_action(
+        protected,
+        "/asset",
+        method="get",
+        summary="Download demo bytes",
+    )
     def asset(request):
         return BytesResponse(b"muscular-example", content_type="text/plain")
 

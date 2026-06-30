@@ -33,7 +33,9 @@ def test_protected_endpoint_requires_guard_header(client):
     )
 
     assert denied.status_code == 401
-    assert denied.json() == {"error": "unauthorized"}
+    denied_payload = denied.json()
+    assert denied_payload["error"] == "unauthorized"
+    assert denied_payload["error_code"] == "unauthorized"
     assert allowed.status_code == 200
     assert allowed.json()["diagnostics"]["database"].endswith(".sqlite3")
     assert allowed.json()["diagnostics"]["database_exists"] is True
