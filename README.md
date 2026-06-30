@@ -9,6 +9,7 @@ real Muscular applications with:
 - route guards with endpoint-level auth override;
 - CORS middleware;
 - core response helpers (`JsonResponse`, `BytesResponse`, `NoContentResponse`);
+- route contract v2: one API path can expose different route keys per HTTP method;
 - CLI commands with nested routing;
 - SQLite persistence;
 - simple admin/auth flow.
@@ -59,7 +60,14 @@ curl http://localhost:8080/api/v1/protected/diagnostics
 curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/diagnostics
 curl -X DELETE -H 'X-Api-Key: demo-framework-token' -i http://localhost:8080/api/v1/protected/cache
 curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/asset
+curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/method-key
+curl -X POST -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/method-key
 ```
+
+`/api/v1/protected/method-key` intentionally registers `GET` and `POST` on the
+same path with distinct route keys. This demonstrates the core route lookup
+change: ASGI and WSGI now select from all route records on the matched terminal
+node before filtering by method.
 
 The test suite runs the same protected API checks through both WSGI and ASGI
 test clients.

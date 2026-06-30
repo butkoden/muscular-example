@@ -83,3 +83,22 @@ def test_openapi_documents_group_metadata_and_auth_override(client):
     assert "security" not in login
     assert diagnostics["tags"] == ["Framework primitives"]
     assert "401" in diagnostics["responses"]
+
+
+def test_same_api_path_can_use_distinct_route_keys_per_method(client):
+    read = client.get(
+        "/api/v1/protected/method-key",
+        headers={"X-Api-Key": API_DEMO_TOKEN},
+    )
+    write = client.post(
+        "/api/v1/protected/method-key",
+        headers={"X-Api-Key": API_DEMO_TOKEN},
+    )
+    schema = client.get("/api/v1/schema").json()
+
+    assert read.status_code == 200
+    assert read.json()["route_key"] == "framework.method_key.read"
+    assert write.status_code == 200
+    assert write.json()["route_key"] == "framework.method_key.write"
+    assert "get" in schema["paths"]["/api/v1/protected/method-key"]
+    assert "post" in schema["paths"]["/api/v1/protected/method-key"]

@@ -123,6 +123,25 @@ def login(request):
 В примере также подключен `cors(...)` на API itinerary, поэтому preflight и
 обычные ответы ведут себя одинаково под WSGI и ASGI.
 
+Ядро Muscles теперь владеет общим backend pipeline для типизированных
+аргументов handler, разрешения зависимостей, guards, route-level security и
+middleware. WSGI и ASGI адаптеры используют этот pipeline, а пример проверяет
+паритет через одни и те же API-тесты для обоих транспортов.
+
+Route contract v2 также позволяет одному API path иметь разные route keys для
+разных HTTP-методов:
+
+```python
+@protected.init("/method-key", key="framework.method_key.read", method="get")
+def method_key_read(request):
+    return JsonResponse({"operation": "read"})
+
+
+@protected.init("/method-key", key="framework.method_key.write", method="post")
+def method_key_write(request):
+    return JsonResponse({"operation": "write"})
+```
+
 ## 6) CLI слой
 
 Группируйте операционные команды:
@@ -141,7 +160,8 @@ def login(request):
 - тест API бронирования;
 - тест админ-логина и диагностики;
 - тест CLI команд.
-- parity-тест WSGI/ASGI для protected routes, auth override, CORS и response helpers.
+- parity-тест WSGI/ASGI для protected routes, auth override, CORS, response helpers
+  и разных route keys на одном path.
 
 ## 8) Как создать свой проект на основе этого примера
 

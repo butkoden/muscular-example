@@ -124,6 +124,25 @@ Use core response helpers for protocol-neutral handlers:
 The example also registers `cors(...)` on the API itinerary, so preflight and
 regular responses behave the same under WSGI and ASGI.
 
+Muscles core now owns the shared backend pipeline for typed handler arguments,
+dependency resolution, guards, route-level security and middleware. WSGI and
+ASGI adapters use that pipeline, while this example verifies parity through the
+same API tests for both transports.
+
+Route contract v2 also allows one API path to use distinct route keys per HTTP
+method:
+
+```python
+@protected.init("/method-key", key="framework.method_key.read", method="get")
+def method_key_read(request):
+    return JsonResponse({"operation": "read"})
+
+
+@protected.init("/method-key", key="framework.method_key.write", method="post")
+def method_key_write(request):
+    return JsonResponse({"operation": "write"})
+```
+
 ## 6) CLI layer
 
 Use grouped commands for operational workflows:
@@ -142,7 +161,8 @@ At minimum:
 - API booking flow test;
 - admin login + diagnostics test;
 - CLI command behavior test.
-- WSGI/ASGI parity test for guarded routes, auth override, CORS and response helpers.
+- WSGI/ASGI parity test for guarded routes, auth override, CORS, response helpers
+  and distinct route keys on the same path.
 
 ## 8) How to create your own project from this template
 

@@ -327,6 +327,26 @@ def register_api(registrar: RouteRegistrar):
     def asset(request):
         return BytesResponse(b"muscular-example", content_type="text/plain")
 
+    @registrar.api_action(
+        protected,
+        "/method-key",
+        key="framework.method_key.read",
+        method="get",
+        summary="Read route identity demo",
+    )
+    def method_key_read(request):
+        return JsonResponse({"operation": "read", "route_key": "framework.method_key.read"})
+
+    @registrar.api_action(
+        protected,
+        "/method-key",
+        key="framework.method_key.write",
+        method="post",
+        summary="Write route identity demo",
+    )
+    def method_key_write(request):
+        return JsonResponse({"operation": "write", "route_key": "framework.method_key.write"})
+
 
 wsgi_project = ButkoInfoWsgiApp(wsgi_runtime())
 asgi_project = ButkoInfoAsgiApp(asgi_runtime())
