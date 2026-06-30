@@ -8,7 +8,7 @@ def main():
     init_db()
     host = "0.0.0.0"
     port = 8080
-    print(f"butko.info demo is running at http://localhost:{port}")
+    print(f"Muscular Example level 4 is running at http://localhost:{port}")
     with make_server(host, port, app) as server:
         server.serve_forever()
 

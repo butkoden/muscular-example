@@ -1,161 +1,93 @@
-# Гайд по проектам Muscular (RU)
+# Гайд по muscular-example (RU)
 
 ## Назначение
 
-`muscular-example` — это практический эталон того, как собирать реальные
-приложения на экосистеме Muscular.
+`muscular-example` теперь устроен как учебная лестница из четырех уровней.
+Каждый следующий уровень добавляет новые возможности Muscles, не заставляя
+новичка сразу читать большое приложение.
 
-В примере объединены:
+## Уровень 1: минимальный web route
 
-- ядро `muscles` (`ApplicationMeta`, `Configurator`, `Context`);
-- web/api рантайм `muscles-wsgi`;
-- web/api рантайм `muscles-asgi` с теми же контрактами;
-- консольный рантайм `muscles-cli`.
+Пакет: `example_1`
 
-## 1) Рекомендуемая структура проекта
+Что изучать:
 
-```text
-project/
-  your_app/
-    web.py
-    server.py
-    cli.py
-    db.py
-    templates.py
-    templates/
-    static/
-  tests/
-  pyproject.toml
-  docker-compose.yml
-  Dockerfile
+- `ApplicationMeta`;
+- `Configurator`;
+- `Context(WsgiStrategy)`;
+- прямой декоратор `@routes.init(...)`;
+- возврат готового `BaseResponse`.
+
+Это самый короткий пример, где видно, как запрос проходит от WSGI entrypoint до
+handler-функции.
+
+## Уровень 2: REST API и guards
+
+Пакет: `example_2`
+
+Что изучать:
+
+- `routes.init(...)` для обычной страницы;
+- `api.init(...)` для простого API endpoint;
+- `api.group(...)` для общего prefix/tags/security;
+- `group.init(..., auth=False)` для публичного endpoint внутри protected-группы;
+- `api.guard(...)` для защиты группы по path pattern;
+- `api.use(cors(...))` для middleware;
+- автоматическую OpenAPI-схему.
+
+Ключевая идея: здесь уже есть WSGI и ASGI варианты, но код регистрации API один.
+
+## Уровень 3: CLI
+
+Пакет: `example_3`
+
+Что изучать:
+
+- `Context(CliStrategy)`;
+- `@cli.group(...)`;
+- `@group.command(...)`;
+- вложенные группы;
+- поддержку `example-3/tasks list` и `example-3 tasks list`.
+
+CLI вынесен отдельно, чтобы не смешивать routing web/API с routing команд.
+
+## Уровень 4: полное приложение
+
+Пакет: `example_4`
+
+Что изучать:
+
+- страницы, шаблоны и static files;
+- `RestApi`;
+- `@api.controller(...)` и `@api.action(...)`;
+- `api.group(...)` и `group.init(...)`;
+- OpenAPI/Swagger;
+- общий WSGI/ASGI runtime binding;
+- CORS и guards;
+- `JsonResponse`, `BytesResponse`, `NoContentResponse`;
+- один API path с разными route keys для разных HTTP methods;
+- SQLite и простую админку;
+- операционные CLI-команды.
+
+Важно: в `example_4` больше нет кастомной прослойки регистрации. Пример
+показывает фреймворк напрямую, чтобы читателю было понятно, какие возможности
+дает сам Muscles.
+
+## Как читать код
+
+1. Начните с `example_1/web.py`.
+2. Затем откройте `example_2/web.py` и сравните page route с API route.
+3. После этого посмотрите `example_3/cli.py`.
+4. В конце переходите к `example_4/web.py` и `example_4/cli.py`.
+
+Код специально покрыт русско-английскими комментариями: русская строка объясняет
+смысл, английская помогает читать терминологию из документации и OpenAPI.
+
+## Проверки
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
 ```
 
-## 2) Инициализация приложения
-
-Создайте класс приложения, где есть:
-
-1. `ApplicationMeta`
-2. статическая конфигурация (`Configurator`)
-3. стратегия выполнения (`Context(WsgiStrategy, params={})` или `Context(AsgiStrategy, params={})`)
-
-В этом примере общая логика приложения вынесена в base-класс, а поверх него
-создаются тонкие runtime-specific классы:
-
-```python
-from muscles import ApplicationMeta, Context
-from muscles.asgi import asgi_app
-from muscles.asgi.asgi import AsgiStrategy
-from muscles.wsgi import wsgi_app
-from muscles.wsgi.wsgi import WsgiStrategy
-
-
-class App:
-    def __init__(self, strategy):
-        self.context = Context(strategy, params={})
-
-
-class WsgiApp(App, metaclass=ApplicationMeta):
-    pass
-
-
-class AsgiApp(App, metaclass=ApplicationMeta):
-    pass
-
-
-wsgi_application = wsgi_app(WsgiApp(WsgiStrategy), context="context")
-asgi_application = asgi_app(AsgiApp(AsgiStrategy), context="context")
-```
-
-Дальше регистрируйте:
-
-- web-роуты (`routes.init(...)`);
-- API-контроллеры (`RestApi`, `@api.controller`, `@api.action`);
-- startup-действия (например, `init_db()`).
-
-## 3) Стратегия роутинга
-
-Используйте древовидную структуру единообразно:
-
-- Web: `/`, `/resume`, `/admin/...`
-- API: `/api/v1/...`
-- CLI: `bookings remove 1` и алиас `bookings/remove 1`
-
-Одинаковая логика роутинга в web/api/cli упрощает поддержку.
-
-## 4) Слой данных
-
-Для небольших проектов SQLite обычно достаточно:
-
-- инициализация схемы один раз на процесс/путь БД;
-- WAL-режим для лучшей конкурентности;
-- все операции с БД в `db.py`.
-
-## 5) API и OpenAPI
-
-Описывайте модели запросов/ответов через schema-классы Muscular и привязывайте
-их к action-методам. Swagger/OpenAPI формируется автоматически.
-
-ValueObject можно внедрять постепенно через `ValueObjectField`:
-
-- контракты OpenAPI и роутинга остаются стабильными;
-- инварианты домена живут в отдельных value-классах;
-- валидация не размазывается по хендлерам.
-
-Защищенная группа может содержать публичный endpoint через локальное
-переопределение авторизации:
-
-```python
-api.guard("/api/v1/protected/**", require_api_key)
-protected = api.group("/protected", tags=["Framework primitives"], security=["ApiKey"])
-
-
-@protected.init("/login", method="post", auth=False)
-def login(request):
-    return JsonResponse({"token": API_DEMO_TOKEN})
-```
-
-Для protocol-neutral handlers используйте core helpers ответов:
-
-- `JsonResponse` для явного JSON;
-- `BytesResponse` для bytes/text payload;
-- `NoContentResponse` для `204 No Content`.
-
-В примере также подключен `cors(...)` на API itinerary, поэтому preflight и
-обычные ответы ведут себя одинаково под WSGI и ASGI.
-
-## 6) CLI слой
-
-Группируйте операционные команды:
-
-- `init-db`
-- `bookings list`
-- `bookings remove <id>`
-- `diagnostics`
-- `set-password`
-
-## 7) Базовый набор тестов
-
-Минимум:
-
-- smoke для страниц/static/swagger/schema;
-- тест API бронирования;
-- тест админ-логина и диагностики;
-- тест CLI команд.
-- parity-тест WSGI/ASGI для protected routes, auth override, CORS и response helpers.
-
-## 8) Как создать свой проект на основе этого примера
-
-1. Скопируйте этот репозиторий.
-2. Переименуйте пакет и доменные шаблоны/контент.
-3. Сохраните архитектуру и тесты.
-4. Адаптируйте схему БД и API-модели под свой домен.
-5. Добавьте CI и deployment.
-
-## 9) Как держать пример актуальным
-
-Когда меняются framework-репозитории:
-
-1. обновляйте локальные `muscles*` репы;
-2. прогоняйте тесты примера;
-3. правьте места, где изменились контракты;
-4. фиксируйте миграционные заметки в README/changelog.
+Тесты проверяют все уровни и отдельно подтверждают parity между WSGI и ASGI для
+полного приложения.

@@ -1,7 +1,7 @@
 import io
 import json
 
-from butko_info.web import app
+from example_4.web import app
 
 
 BASE_ENV = {
@@ -45,7 +45,7 @@ def cookie_from(headers, name):
 def test_home_page_renders():
     meta, body = call("/")
     assert meta["status"].startswith("200")
-    assert b"butko.info" in body
+    assert b"Muscular Example" in body
 
 
 def test_pages_assets_and_swagger_render():
@@ -53,7 +53,7 @@ def test_pages_assets_and_swagger_render():
         ("/resume", b"Portfolio"),
         ("/static/site.css", b".site-header"),
         ("/swagger", b"Swagger"),
-        ("/api/v1/schema", b"butko.info API"),
+        ("/api/v1/schema", b"Muscular Example API"),
     ]:
         meta, body = call(path)
         assert meta["status"].startswith("200")
@@ -103,7 +103,7 @@ def test_admin_login_and_diagnostics():
         body=body,
         content_type="application/x-www-form-urlencoded",
     )
-    cookie = cookie_from(meta["headers"], "butko_info_admin")
+    cookie = cookie_from(meta["headers"], "example_4_admin")
 
     status_headers = {}
 
