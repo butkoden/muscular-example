@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`muscular-example` is now organized as a four-level learning staircase. Each
+`muscular-example` is now organized as a six-level learning staircase. Each
 level adds a small set of Muscles features, so new readers do not have to start
 from the full application.
 
@@ -74,12 +74,44 @@ Important: `example_4` no longer uses a custom registration wrapper. The example
 now shows the framework APIs directly, so readers can see what Muscles itself
 provides.
 
+## Level 5: data, documents and AI extensions
+
+Package: `example_5`
+
+Learn:
+
+- `SqlConnectionRegistry` for named SQL connections;
+- `SqlRepository` and `UnitOfWork` for CRUD/query flow;
+- `muscles-documents` as `documents.*` actions;
+- `muscles-ai` as `ai.*` actions with the noop provider;
+- extension action calls through the shared `ActionDispatcher`.
+
+Key idea: newer packages extend the application model without forcing a separate
+transport architecture.
+
+## Level 6: protocol projections and observability
+
+Package: `example_6`
+
+Learn:
+
+- one `@app.action(...)` as the source of truth;
+- `JsonRpcAdapter` for JSON-RPC 2.0;
+- `SseAdapter` for `StreamResult` and typed events;
+- `McpStrategy` for MCP tools/resources;
+- `MusclesTracer` and `instrument_action_dispatch` for lifecycle spans.
+
+Key idea: JSON-RPC, SSE, MCP, and observability do not copy business logic. They
+project the same action contract.
+
 ## Reading Order
 
 1. Start with `example_1/web.py`.
 2. Open `example_2/web.py` and compare a page route with API routes.
 3. Read `example_3/cli.py`.
-4. Finish with `example_4/web.py` and `example_4/cli.py`.
+4. Move to `example_4/web.py` and `example_4/cli.py`.
+5. Read `example_5/data_ai_documents.py`.
+6. Finish with `example_6/protocols_observability.py`.
 
 The code intentionally uses Russian and English comments together: Russian
 explains the local learning context, English keeps framework terminology close
@@ -88,8 +120,8 @@ to documentation and OpenAPI wording.
 ## Checks
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
 ```
 
-Tests cover all four levels and verify WSGI/ASGI parity for the full
-application.
+Tests cover all levels, verify WSGI/ASGI parity for the full application, and
+keep the new extension examples executable.

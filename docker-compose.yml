@@ -16,4 +16,11 @@ services:
       - ../muscles-wsgi/src:/app/muscles-wsgi/src
       - ../muscles-asgi/src:/app/muscles-asgi/src
       - ../muscles-cli/src:/app/muscles-cli/src
+      - ../muscles-sql/src:/app/muscles-sql/src
+      - ../muscles-ai/src:/app/muscles-ai/src
+      - ../muscles-documents/src:/app/muscles-documents/src
+      - ../muscles-jsonrpc/src:/app/muscles-jsonrpc/src
+      - ../muscles-sse/src:/app/muscles-sse/src
+      - ../muscles-otel/src:/app/muscles-otel/src
+      - ../muscles-mcp/src:/app/muscles-mcp/src
       - .:/app/muscular-example

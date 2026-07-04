@@ -131,14 +131,49 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings/remove 1
 ```
 
+### Level 5: data, documents and AI extensions
+
+Package: `example_5`
+
+Shows newer framework extension packages without adding web routing noise:
+
+- `muscles-sql` named connections, repository queries and Unit of Work;
+- `muscles-documents` local source loading, parsing, chunking and sync planning;
+- `muscles-ai` noop-provider actions through `ActionDispatcher`.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
+```
+
+### Level 6: protocol projections and observability
+
+Package: `example_6`
+
+Shows one action-first Muscles app projected through newer transport and
+instrumentation libraries:
+
+- `muscles-jsonrpc` discovers and calls actions as JSON-RPC 2.0 methods;
+- `muscles-sse` streams progress/result events from `StreamResult`;
+- `muscles-mcp` exposes the same action as MCP tools;
+- `muscles-otel` records action lifecycle spans around validation and handler execution.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
+```
+
 ## Tests
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
 ```
 
-The test suite checks every level and verifies that level 4 behaves the same
-through WSGI and ASGI test clients.
+The test suite checks every level, verifies that level 4 behaves the same
+through WSGI and ASGI test clients, and keeps the new ecosystem extension
+examples executable.
 
 ## Docker
 
@@ -153,5 +188,7 @@ docker compose up --build
 
 ## Sync Policy
 
-When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior
-changes, this example should be updated in the same wave and verified by tests.
+When `muscles`, `muscles-wsgi`, `muscles-asgi`, `muscles-cli`,
+`muscles-sql`, `muscles-ai`, `muscles-documents`, `muscles-jsonrpc`,
+`muscles-sse`, `muscles-otel`, or `muscles-mcp` behavior changes, this example
+should be updated in the same wave and verified by tests.
