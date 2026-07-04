@@ -18,6 +18,17 @@
 Так читатель видит не набор разных скриптов, а один и тот же способ разработки,
 примененный к разным библиотекам.
 
+## Как запускать правильно
+
+Примеры экспортируют application callables, а не реализуют свой сервер:
+
+- WSGI-примеры запускаются через WSGI server, например `gunicorn`;
+- ASGI-примеры запускаются через ASGI server, например `uvicorn`;
+- CLI-примеры запускаются как Python modules.
+
+Встроенные циклы на `wsgiref.simple_server` намеренно не используются: они
+маскируют главный контракт примера и выглядят как самодельный production server.
+
 ## Уровень 1: минимальный web route
 
 Пакет: `example_1`
@@ -32,6 +43,12 @@
 
 Это самый короткий пример, где видно, как запрос проходит от WSGI entrypoint до
 handler-функции.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m gunicorn example_1.web:app --bind 0.0.0.0:8080
+```
 
 ## Уровень 2: REST API и guards
 
@@ -49,6 +66,13 @@ handler-функции.
 
 Ключевая идея: здесь уже есть WSGI и ASGI варианты, но код регистрации API один.
 
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m gunicorn example_2.web:wsgi_application --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m uvicorn example_2.web:asgi_application --host 0.0.0.0 --port 8080
+```
+
 ## Уровень 3: CLI
 
 Пакет: `example_3`
@@ -62,6 +86,12 @@ handler-функции.
 - поддержку `example-3/tasks list` и `example-3 tasks list`.
 
 CLI вынесен отдельно, чтобы не смешивать routing web/API с routing команд.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/hello Student
+```
 
 ## Уровень 4: полное приложение
 
@@ -85,6 +115,14 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 показывает фреймворк напрямую, чтобы читателю было понятно, какие возможности
 дает сам Muscles.
 
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m gunicorn example_4.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m uvicorn example_4.web:asgi_application --host 0.0.0.0 --port 8080
+```
+
 ## Уровень 5: data, documents и AI extensions
 
 Пакет: `example_5`
@@ -103,6 +141,13 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-5`.
 
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
+```
+
 ## Уровень 6: protocol projections и observability
 
 Пакет: `example_6`
@@ -120,6 +165,13 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 
 Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-6`.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m gunicorn example_6.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
+```
 
 ## Как читать код
 

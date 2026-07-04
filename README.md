@@ -17,6 +17,18 @@ All examples follow the same small teaching structure:
 This keeps the examples comparable even when they demonstrate different
 libraries.
 
+## Running Examples Correctly
+
+The examples export application callables. Do not treat the repository as a
+place to write custom server loops:
+
+- WSGI examples expose `app` or `wsgi_application` and should be run by a WSGI server such as `gunicorn`;
+- ASGI examples expose `asgi_application` and should be run by an ASGI server such as `uvicorn`;
+- CLI examples are the exception and should be run as Python modules.
+
+Install the runner dependencies from `requirements.txt`, then use the commands
+below for each level.
+
 ## Learning Levels
 
 ### Level 1: minimal web route
@@ -33,7 +45,7 @@ Shows the smallest useful WSGI application:
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m example_1.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m gunicorn example_1.web:app --bind 0.0.0.0:8080
 ```
 
 Open:
@@ -57,7 +69,8 @@ Adds a small REST API without extra project architecture:
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m example_2.server
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m gunicorn example_2.web:wsgi_application --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m uvicorn example_2.web:asgi_application --host 0.0.0.0 --port 8080
 ```
 
 Try it:
@@ -110,7 +123,8 @@ Run the web app:
 
 ```bash
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.server
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m gunicorn example_4.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m uvicorn example_4.web:asgi_application --host 0.0.0.0 --port 8080
 ```
 
 Open:
@@ -159,7 +173,7 @@ The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
 PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
 ```
 
@@ -185,7 +199,7 @@ The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m gunicorn example_6.web:app --bind 0.0.0.0:8080
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
 ```
 

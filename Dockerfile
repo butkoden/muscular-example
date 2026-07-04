@@ -26,4 +26,4 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8080
 
-CMD ["python", "-m", "example_4.server"]
+CMD ["gunicorn", "example_4.web:app", "--bind", "0.0.0.0:8080"]
