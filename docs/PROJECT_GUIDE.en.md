@@ -6,6 +6,18 @@
 level adds a small set of Muscles features, so new readers do not have to start
 from the full application.
 
+## Shared Development Approach
+
+All levels use the same teaching format:
+
+- contract: schemas, routes, actions, or `run_*_example()` outputs are explicit;
+- use case: the useful scenario lives in a small function or class;
+- adapter: WSGI, ASGI, CLI, SQL, AI, Documents, JSON-RPC, SSE, MCP, and OTEL stay at the edges;
+- test: each level has a compact test contract proving the example is executable.
+
+This makes the examples feel like one development style applied to different
+libraries, not a set of unrelated scripts.
+
 ## Level 1: minimal web route
 
 Package: `example_1`

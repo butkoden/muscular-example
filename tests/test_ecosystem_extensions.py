@@ -12,6 +12,11 @@ def test_example_5_shows_sql_documents_and_ai_packages():
     documents = run_documents_example()
     ai = run_ai_example()
 
+    for payload in (sql, documents, ai):
+        assert payload["approach"]["contract"]
+        assert payload["approach"]["use_case"]
+        assert payload["approach"]["adapter"]
+
     assert sql["connection_names"] == ["analytics", "default"]
     assert sql["ready_topics"] == ["muscles-sql", "muscles-documents"]
     assert sql["total"] == 3
@@ -30,6 +35,11 @@ def test_example_6_projects_actions_to_jsonrpc_sse_mcp_and_otel():
     sse = run_sse_example()
     mcp = run_mcp_example()
     otel = run_otel_example()
+
+    for payload in (jsonrpc, sse, mcp, otel):
+        assert payload["approach"]["contract"]
+        assert payload["approach"]["use_case"]
+        assert payload["approach"]["adapter"]
 
     assert "learning.echo" in jsonrpc["methods"]
     assert jsonrpc["echo"]["result"] == {"text": "Hello JSON-RPC", "transport": "jsonrpc"}

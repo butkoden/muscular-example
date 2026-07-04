@@ -5,6 +5,18 @@ Layered learning examples for the `muscles` framework.
 The repository is organized as a staircase. Start with `example_1`, then move
 one level up when the previous level feels clear.
 
+## Development Approach
+
+All examples follow the same small teaching structure:
+
+- contract: schemas, routes, actions or `run_*_example()` outputs are explicit;
+- use case: the useful scenario is kept in small functions/classes;
+- adapter: WSGI, ASGI, CLI, SQL, AI, Documents, JSON-RPC, SSE, MCP and OTEL stay at the edges;
+- test: each level has a compact test contract that proves the example remains executable.
+
+This keeps the examples comparable even when they demonstrate different
+libraries.
+
 ## Learning Levels
 
 ### Level 1: minimal web route

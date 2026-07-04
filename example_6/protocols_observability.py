@@ -11,6 +11,17 @@ from muscles_otel import MusclesTracer, instrument_action_dispatch
 from muscles_sse import SseAdapter
 
 
+DEVELOPMENT_APPROACH = {
+    "contract": "Actions declare schemas, transports, stream metadata, and MCP metadata in one place.",
+    "use_case": "Handlers contain the learning behavior and do not know which projection calls them.",
+    "adapter": "JSON-RPC, SSE, MCP, and OTEL stay thin projection or instrumentation adapters.",
+}
+
+
+def development_approach() -> dict:
+    return dict(DEVELOPMENT_APPROACH)
+
+
 class ExtensionProjectionApp(metaclass=ApplicationMeta):
     """One action-first app projected through several ecosystem packages."""
 
@@ -53,6 +64,8 @@ def _mcp_metadata(route: str, name: str) -> dict:
     metadata=_mcp_metadata("/echo", "learning.echo"),
 )
 def echo(payload, context):
+    # RU: Handler знает только payload/context, а не JSON-RPC или MCP детали.
+    # EN: The handler knows only payload/context, not JSON-RPC or MCP details.
     return {"text": payload["text"], "transport": context.transport}
 
 
@@ -69,6 +82,8 @@ def echo(payload, context):
     stream_metadata={"event_types": ["progress", "result"]},
 )
 def progress(payload, context):
+    # RU: Длинный процесс возвращает StreamResult, а SSE только доставляет события.
+    # EN: A long process returns StreamResult, while SSE only delivers events.
     steps = int(payload["steps"])
     return StreamResult(source=_progress_events(steps), metadata={"transport": context.transport})
 
@@ -95,6 +110,7 @@ def run_jsonrpc_example() -> dict:
         }
     )
     return {
+        "approach": development_approach(),
         "methods": [method["name"] for method in discovery["result"]],
         "echo": echo_response,
     }
@@ -103,6 +119,7 @@ def run_jsonrpc_example() -> dict:
 def run_sse_example() -> dict:
     response = SseAdapter.from_application(app).stream_action("learning.progress", {"steps": 2})
     return {
+        "approach": development_approach(),
         "status": response.status,
         "content_type": response.headers["Content-Type"],
         "chunks": list(response.stream),
@@ -118,6 +135,7 @@ def run_mcp_example() -> dict:
         arguments={"text": "Hello MCP"},
     )
     return {
+        "approach": development_approach(),
         "tools": [tool["name"] for tool in tools],
         "call": call,
     }
@@ -133,6 +151,7 @@ def run_otel_example() -> dict:
         transport="jsonrpc",
     )
     return {
+        "approach": development_approach(),
         "result": result.value,
         "spans": [record.name for record in tracer.records],
         "span_count": len(tracer.records),

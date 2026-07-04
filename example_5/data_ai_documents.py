@@ -13,9 +13,22 @@ from muscles_sql import SqlRepository, UnitOfWork
 from sqlalchemy import Column, Integer, MetaData, String, Table
 
 
+DEVELOPMENT_APPROACH = {
+    "contract": "Each run_*_example function returns a plain dict that tests and readers can inspect.",
+    "use_case": "Business intent is kept in small scenario functions instead of framework boot code.",
+    "adapter": "Framework packages are called at the edges through registries, repositories, and dispatchers.",
+}
+
+
+def development_approach() -> dict:
+    return dict(DEVELOPMENT_APPROACH)
+
+
 def run_sql_example(db_url: str = "sqlite:///:memory:") -> dict:
     """Show SQL registry, repository queries, and Unit of Work in one flow."""
 
+    # RU: Контракт сценария: этот пример отвечает на вопрос "как хранить данные".
+    # EN: Scenario contract: this example answers "how do we persist data".
     registry = SqlConnectionRegistry(
         [
             SqlConnectionConfig(name="default", url=db_url),
@@ -56,6 +69,7 @@ def run_sql_example(db_url: str = "sqlite:///:memory:") -> dict:
 
     inspection = registry.inspect("default")
     return {
+        "approach": development_approach(),
         "connection_names": registry.names(),
         "safe_url": registry.config("default").safe_url,
         "status": inspection["status"],
@@ -67,6 +81,8 @@ def run_sql_example(db_url: str = "sqlite:///:memory:") -> dict:
 def run_documents_example() -> dict:
     """Show local document loading, parsing, chunking, and sync planning."""
 
+    # RU: Документы показываем как use-case: загрузить, разобрать, нарезать.
+    # EN: Documents are shown as a use case: load, parse, then chunk.
     with TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
         (root / "guide.md").write_text(
@@ -118,6 +134,7 @@ def run_documents_example() -> dict:
         sync_plan = dispatcher.execute("documents.sync.plan", {"source": "repo"}).value
 
     return {
+        "approach": development_approach(),
         "sources": sources,
         "loaded_count": loaded["count"],
         "parsed_preview": parsed["text"][:32],
@@ -129,6 +146,8 @@ def run_documents_example() -> dict:
 def run_ai_example() -> dict:
     """Show framework-level AI actions with the built-in noop provider."""
 
+    # RU: AI пример тоже action-first: package регистрирует actions, dispatcher вызывает.
+    # EN: The AI example is action-first too: package registers actions, dispatcher calls them.
     app = SimpleNamespace()
     init_ai_package(
         app,
@@ -156,6 +175,7 @@ def run_ai_example() -> dict:
     doctor = dispatcher.execute("ai.doctor", {}).value
 
     return {
+        "approach": development_approach(),
         "answer": ask["answer"],
         "search_hits": len(search["hits"]),
         "sources": _source_names(sources),
