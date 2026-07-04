@@ -101,6 +101,9 @@ Learn:
 Key idea: newer packages extend the application model without forcing a separate
 transport architecture.
 
+The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-5`.
+
 ## Level 6: protocol projections and observability
 
 Package: `example_6`
@@ -116,14 +119,17 @@ Learn:
 Key idea: JSON-RPC, SSE, MCP, and observability do not copy business logic. They
 project the same action contract.
 
+The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-6`.
+
 ## Reading Order
 
 1. Start with `example_1/web.py`.
 2. Open `example_2/web.py` and compare a page route with API routes.
 3. Read `example_3/cli.py`.
 4. Move to `example_4/web.py` and `example_4/cli.py`.
-5. Read `example_5/data_ai_documents.py`.
-6. Finish with `example_6/protocols_observability.py`.
+5. Read `example_5/web.py` and `example_5/data_ai_documents.py`.
+6. Finish with `example_6/web.py` and `example_6/protocols_observability.py`.
 
 The code intentionally uses Russian and English comments together: Russian
 explains the local learning context, English keeps framework terminology close

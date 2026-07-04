@@ -1,10 +1,14 @@
+from muscles.wsgi.testing import TestClient as WsgiTestClient
+
 from example_5.data_ai_documents import run_ai_example, run_documents_example, run_sql_example
+from example_5.web import app as example_5_app
 from example_6.protocols_observability import (
     run_jsonrpc_example,
     run_mcp_example,
     run_otel_example,
     run_sse_example,
 )
+from example_6.web import app as example_6_app
 
 
 def test_example_5_shows_sql_documents_and_ai_packages():
@@ -56,3 +60,16 @@ def test_example_6_projects_actions_to_jsonrpc_sse_mcp_and_otel():
     assert "muscles.action.execute" in otel["spans"]
     assert "muscles.action.validate" in otel["spans"]
     assert "muscles.action.handler" in otel["spans"]
+
+
+def test_examples_5_and_6_keep_example_1_wsgi_foundation():
+    example_5 = WsgiTestClient(example_5_app).get("/example-5")
+    example_6 = WsgiTestClient(example_6_app).get("/example-6")
+
+    assert example_5.status_code == 200
+    assert example_5.json()["level"] == 5
+    assert "sql" in example_5.json()["result"]
+
+    assert example_6.status_code == 200
+    assert example_6.json()["level"] == 6
+    assert "jsonrpc" in example_6.json()["result"]

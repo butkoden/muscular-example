@@ -153,11 +153,19 @@ Shows newer framework extension packages without adding web routing noise:
 - `muscles-documents` local source loading, parsing, chunking and sync planning;
 - `muscles-ai` noop-provider actions through `ActionDispatcher`.
 
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
 Run it:
 
 ```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.server
 PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
 ```
+
+Open:
+
+- http://localhost:8080/example-5
 
 ### Level 6: protocol projections and observability
 
@@ -171,11 +179,19 @@ instrumentation libraries:
 - `muscles-mcp` exposes the same action as MCP tools;
 - `muscles-otel` records action lifecycle spans around validation and handler execution.
 
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
 Run it:
 
 ```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.server
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
 ```
+
+Open:
+
+- http://localhost:8080/example-6
 
 ## Tests
 

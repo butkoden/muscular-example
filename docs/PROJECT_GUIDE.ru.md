@@ -100,6 +100,9 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 Ключевая идея: новые пакеты расширяют application model, но не требуют
 отдельной транспортной архитектуры.
 
+Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-5`.
+
 ## Уровень 6: protocol projections и observability
 
 Пакет: `example_6`
@@ -115,14 +118,17 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 Ключевая идея: JSON-RPC, SSE, MCP и observability не копируют бизнес-логику, а
 проецируют один и тот же action contract.
 
+Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-6`.
+
 ## Как читать код
 
 1. Начните с `example_1/web.py`.
 2. Затем откройте `example_2/web.py` и сравните page route с API route.
 3. После этого посмотрите `example_3/cli.py`.
 4. Затем переходите к `example_4/web.py` и `example_4/cli.py`.
-5. После этого смотрите `example_5/data_ai_documents.py`.
-6. В конце откройте `example_6/protocols_observability.py`.
+5. После этого смотрите `example_5/web.py` и `example_5/data_ai_documents.py`.
+6. В конце откройте `example_6/web.py` и `example_6/protocols_observability.py`.
 
 Код специально покрыт русско-английскими комментариями: русская строка объясняет
 смысл, английская помогает читать терминологию из документации и OpenAPI.
