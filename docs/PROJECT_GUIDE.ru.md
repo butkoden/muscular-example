@@ -2,9 +2,32 @@
 
 ## Назначение
 
-`muscular-example` теперь устроен как учебная лестница из четырех уровней.
+`muscular-example` теперь устроен как учебная лестница из шести уровней.
 Каждый следующий уровень добавляет новые возможности Muscles, не заставляя
 новичка сразу читать большое приложение.
+
+## Единый подход к разработке
+
+Все уровни придерживаются одного учебного формата:
+
+- contract: явно описаны schemas, routes, actions или результат `run_*_example()`;
+- use case: полезный сценарий держится в маленькой функции или классе;
+- adapter: WSGI, ASGI, CLI, SQL, AI, Documents, JSON-RPC, SSE, MCP и OTEL остаются на краях;
+- test: у уровня есть компактный тестовый контракт, который подтверждает, что пример исполняемый.
+
+Так читатель видит не набор разных скриптов, а один и тот же способ разработки,
+примененный к разным библиотекам.
+
+## Как запускать правильно
+
+Примеры экспортируют application callables, а не реализуют свой сервер:
+
+- WSGI-примеры запускаются через WSGI server, например `gunicorn`;
+- ASGI-примеры запускаются через ASGI server, например `uvicorn`;
+- CLI-примеры запускаются как Python modules.
+
+Встроенные циклы на `wsgiref.simple_server` намеренно не используются: они
+маскируют главный контракт примера и выглядят как самодельный production server.
 
 ## Уровень 1: минимальный web route
 
@@ -20,6 +43,12 @@
 
 Это самый короткий пример, где видно, как запрос проходит от WSGI entrypoint до
 handler-функции.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m gunicorn example_1.web:app --bind 0.0.0.0:8080
+```
 
 ## Уровень 2: REST API и guards
 
@@ -37,6 +66,13 @@ handler-функции.
 
 Ключевая идея: здесь уже есть WSGI и ASGI варианты, но код регистрации API один.
 
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m gunicorn example_2.web:wsgi_application --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m uvicorn example_2.web:asgi_application --host 0.0.0.0 --port 8080
+```
+
 ## Уровень 3: CLI
 
 Пакет: `example_3`
@@ -50,6 +86,12 @@ handler-функции.
 - поддержку `example-3/tasks list` и `example-3 tasks list`.
 
 CLI вынесен отдельно, чтобы не смешивать routing web/API с routing команд.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/hello Student
+```
 
 ## Уровень 4: полное приложение
 
@@ -73,12 +115,72 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 показывает фреймворк напрямую, чтобы читателю было понятно, какие возможности
 дает сам Muscles.
 
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m gunicorn example_4.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m uvicorn example_4.web:asgi_application --host 0.0.0.0 --port 8080
+```
+
+## Уровень 5: data, documents и AI extensions
+
+Пакет: `example_5`
+
+Что изучать:
+
+- `SqlConnectionRegistry` для нескольких SQL-подключений;
+- `SqlRepository` и `UnitOfWork` для CRUD/query-потока;
+- `muscles-documents` как набор `documents.*` actions;
+- `muscles-ai` как набор `ai.*` actions с noop provider;
+- вызов extension actions через общий `ActionDispatcher`.
+
+Ключевая идея: новые пакеты расширяют application model, но не требуют
+отдельной транспортной архитектуры.
+
+Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-5`.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
+```
+
+## Уровень 6: protocol projections и observability
+
+Пакет: `example_6`
+
+Что изучать:
+
+- один `@app.action(...)` как источник истины;
+- `JsonRpcAdapter` для JSON-RPC 2.0;
+- `SseAdapter` для `StreamResult` и typed events;
+- `McpStrategy` для MCP tools/resources;
+- `MusclesTracer` и `instrument_action_dispatch` для lifecycle spans.
+
+Ключевая идея: JSON-RPC, SSE, MCP и observability не копируют бизнес-логику, а
+проецируют один и тот же action contract.
+
+Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-6`.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m gunicorn example_6.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
+```
+
 ## Как читать код
 
 1. Начните с `example_1/web.py`.
 2. Затем откройте `example_2/web.py` и сравните page route с API route.
 3. После этого посмотрите `example_3/cli.py`.
-4. В конце переходите к `example_4/web.py` и `example_4/cli.py`.
+4. Затем переходите к `example_4/web.py` и `example_4/cli.py`.
+5. После этого смотрите `example_5/web.py` и `example_5/data_ai_documents.py`.
+6. В конце откройте `example_6/web.py` и `example_6/protocols_observability.py`.
 
 Код специально покрыт русско-английскими комментариями: русская строка объясняет
 смысл, английская помогает читать терминологию из документации и OpenAPI.
@@ -86,8 +188,8 @@ CLI вынесен отдельно, чтобы не смешивать routing 
 ## Проверки
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
 ```
 
-Тесты проверяют все уровни и отдельно подтверждают parity между WSGI и ASGI для
-полного приложения.
+Тесты проверяют все уровни, отдельно подтверждают parity между WSGI и ASGI для
+полного приложения и держат новые extension examples исполняемыми.

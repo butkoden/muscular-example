@@ -1,8 +1,14 @@
+alembic
+click
 dnspython
+gunicorn
 Jinja2
 jsonschema
+pydantic
 python-magic
 PyYAML
 requests
 requests-toolbelt
+SQLAlchemy
+uvicorn
 watchdog

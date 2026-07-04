@@ -6,4 +6,17 @@ requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["../muscles/src", "../muscles-asgi/src", "../muscles-wsgi/src", "../muscles-cli/src", "."]
+pythonpath = [
+  "../muscles/src",
+  "../muscles-asgi/src",
+  "../muscles-wsgi/src",
+  "../muscles-cli/src",
+  "../muscles-sql/src",
+  "../muscles-ai/src",
+  "../muscles-documents/src",
+  "../muscles-jsonrpc/src",
+  "../muscles-sse/src",
+  "../muscles-otel/src",
+  "../muscles-mcp/src",
+  ".",
+]

@@ -5,6 +5,30 @@ Layered learning examples for the `muscles` framework.
 The repository is organized as a staircase. Start with `example_1`, then move
 one level up when the previous level feels clear.
 
+## Development Approach
+
+All examples follow the same small teaching structure:
+
+- contract: schemas, routes, actions or `run_*_example()` outputs are explicit;
+- use case: the useful scenario is kept in small functions/classes;
+- adapter: WSGI, ASGI, CLI, SQL, AI, Documents, JSON-RPC, SSE, MCP and OTEL stay at the edges;
+- test: each level has a compact test contract that proves the example remains executable.
+
+This keeps the examples comparable even when they demonstrate different
+libraries.
+
+## Running Examples Correctly
+
+The examples export application callables. Do not treat the repository as a
+place to write custom server loops:
+
+- WSGI examples expose `app` or `wsgi_application` and should be run by a WSGI server such as `gunicorn`;
+- ASGI examples expose `asgi_application` and should be run by an ASGI server such as `uvicorn`;
+- CLI examples are the exception and should be run as Python modules.
+
+Install the runner dependencies from `requirements.txt`, then use the commands
+below for each level.
+
 ## Learning Levels
 
 ### Level 1: minimal web route
@@ -21,7 +45,7 @@ Shows the smallest useful WSGI application:
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m example_1.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m gunicorn example_1.web:app --bind 0.0.0.0:8080
 ```
 
 Open:
@@ -45,7 +69,8 @@ Adds a small REST API without extra project architecture:
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m example_2.server
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m gunicorn example_2.web:wsgi_application --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m uvicorn example_2.web:asgi_application --host 0.0.0.0 --port 8080
 ```
 
 Try it:
@@ -98,7 +123,8 @@ Run the web app:
 
 ```bash
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.server
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m gunicorn example_4.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m uvicorn example_4.web:asgi_application --host 0.0.0.0 --port 8080
 ```
 
 Open:
@@ -131,14 +157,65 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings/remove 1
 ```
 
+### Level 5: data, documents and AI extensions
+
+Package: `example_5`
+
+Shows newer framework extension packages without adding web routing noise:
+
+- `muscles-sql` named connections, repository queries and Unit of Work;
+- `muscles-documents` local source loading, parsing, chunking and sync planning;
+- `muscles-ai` noop-provider actions through `ActionDispatcher`.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
+```
+
+Open:
+
+- http://localhost:8080/example-5
+
+### Level 6: protocol projections and observability
+
+Package: `example_6`
+
+Shows one action-first Muscles app projected through newer transport and
+instrumentation libraries:
+
+- `muscles-jsonrpc` discovers and calls actions as JSON-RPC 2.0 methods;
+- `muscles-sse` streams progress/result events from `StreamResult`;
+- `muscles-mcp` exposes the same action as MCP tools;
+- `muscles-otel` records action lifecycle spans around validation and handler execution.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m gunicorn example_6.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
+```
+
+Open:
+
+- http://localhost:8080/example-6
+
 ## Tests
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
 ```
 
-The test suite checks every level and verifies that level 4 behaves the same
-through WSGI and ASGI test clients.
+The test suite checks every level, verifies that level 4 behaves the same
+through WSGI and ASGI test clients, and keeps the new ecosystem extension
+examples executable.
 
 ## Docker
 
@@ -153,5 +230,7 @@ docker compose up --build
 
 ## Sync Policy
 
-When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior
-changes, this example should be updated in the same wave and verified by tests.
+When `muscles`, `muscles-wsgi`, `muscles-asgi`, `muscles-cli`,
+`muscles-sql`, `muscles-ai`, `muscles-documents`, `muscles-jsonrpc`,
+`muscles-sse`, `muscles-otel`, or `muscles-mcp` behavior changes, this example
+should be updated in the same wave and verified by tests.

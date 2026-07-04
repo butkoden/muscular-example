@@ -13,13 +13,15 @@ from example_3.cli import CliApp as Example3CliApp
 from example_3.cli import expand_slash_args as expand_example_3_slash_args
 
 
-def test_readme_describes_the_four_learning_levels():
+def test_readme_describes_the_learning_levels():
     readme = Path("README.md").read_text(encoding="utf-8")
 
     assert "Level 1: minimal web route" in readme
     assert "Level 2: REST API and guards" in readme
     assert "Level 3: CLI commands" in readme
     assert "Level 4: full application" in readme
+    assert "Level 5: data, documents and AI extensions" in readme
+    assert "Level 6: protocol projections and observability" in readme
 
 
 def test_example_1_is_a_minimal_wsgi_page():
