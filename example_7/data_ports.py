@@ -14,6 +14,7 @@ from muscles_data.config import DataConfig
 from muscles_data.errors import DataCapabilityError
 from muscles_data.package import init_package
 from muscles_data.ports import (
+    DocumentStorePort,
     KeyValuePort,
     LockPort,
     ObjectStorePort,
@@ -23,6 +24,7 @@ from muscles_data.ports import (
     VectorSearchPort,
 )
 from muscles_data.runtime import DataRuntime
+from muscles_data_mongodb import MongoDocumentStoreFactory
 
 
 DEVELOPMENT_APPROACH = {
@@ -320,6 +322,75 @@ class FakeRedisClient:
         return True
 
 
+class FakeMongoAdmin:
+    def __init__(self, client: "FakeMongoClient") -> None:
+        self.client = client
+
+    def command(self, _name: str):
+        return {"ok": 1}
+
+
+class FakeMongoCursor:
+    def __init__(self, docs: list[dict[str, Any]]) -> None:
+        self.docs = docs
+        self.limit_value: int | None = None
+
+    def limit(self, value: int):
+        self.limit_value = value
+        return self
+
+    def __iter__(self):
+        return iter(self.docs[: self.limit_value])
+
+
+class FakeMongoCollection:
+    def __init__(self) -> None:
+        self.docs: dict[str, dict[str, Any]] = {}
+
+    def find_one(self, filter):
+        doc = self.docs.get(str(filter.get("_id")))
+        return dict(doc) if doc is not None else None
+
+    def replace_one(self, filter, replacement, upsert: bool = False):
+        del upsert
+        document_id = str(filter["_id"])
+        matched = 1 if document_id in self.docs else 0
+        self.docs[document_id] = dict(replacement)
+        return SimpleNamespace(matched_count=matched, modified_count=1 if matched else 0)
+
+    def find(self, filter):
+        docs = [
+            dict(doc)
+            for doc in self.docs.values()
+            if all(doc.get(key) == value for key, value in dict(filter).items())
+        ]
+        return FakeMongoCursor(docs)
+
+    def delete_one(self, filter):
+        deleted = 1 if self.docs.pop(str(filter.get("_id")), None) is not None else 0
+        return SimpleNamespace(deleted_count=deleted)
+
+
+class FakeMongoDatabase:
+    def __init__(self) -> None:
+        self.collections: dict[str, FakeMongoCollection] = {}
+
+    def __getitem__(self, name: str) -> FakeMongoCollection:
+        return self.collections.setdefault(name, FakeMongoCollection())
+
+
+class FakeMongoClient:
+    def __init__(self) -> None:
+        self.admin = FakeMongoAdmin(self)
+        self.databases: dict[str, FakeMongoDatabase] = {}
+
+    def __getitem__(self, name: str) -> FakeMongoDatabase:
+        return self.databases.setdefault(name, FakeMongoDatabase())
+
+    def close(self) -> None:
+        return None
+
+
 def run_sql_resource_port_example() -> dict:
     """Show SQL as a data resource bridge without importing SQLAlchemy."""
 
@@ -551,6 +622,54 @@ def run_redis_data_ports_example() -> dict:
     }
 
 
+def run_mongodb_document_store_port_example() -> dict:
+    """Show MongoDB as an external document-store port without a real MongoDB server."""
+
+    client = FakeMongoClient()
+    catalog = DataAdapterCatalog.with_defaults()
+    catalog.register(MongoDocumentStoreFactory(client_factory=lambda _config: client))
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "mongo.content": {
+                            "type": "mongodb",
+                            "url": "mongodb://user:mongo-secret@localhost:27017",
+                            "database": "content",
+                            "max_limit": 5,
+                            "timeout": 1,
+                            "native_client": True,
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=catalog,
+    )
+
+    initialized_before = runtime.list_resources()[0]["initialized"]
+    store = cast(DocumentStorePort, runtime.require_port("mongo.content", DocumentStorePort))
+    upsert = store.upsert_document("profiles", "denis", {"name": "Denis", "role": "developer"})
+    found = store.get_document("profiles", "denis")
+    store.upsert_document("profiles", "reader", {"name": "Reader", "role": "developer"})
+    listed = store.find_documents("profiles", filters={"role": "developer"}, limit=10)
+    deleted = store.delete_document("profiles", "reader")
+    native = runtime.require_resource("mongo.content", DataCapability.NATIVE_CLIENT).native_client()
+
+    return {
+        "approach": development_approach(),
+        "initialized_before": initialized_before,
+        "upsert": asdict(upsert),
+        "found": found,
+        "listed_names": [item["name"] for item in listed],
+        "deleted": asdict(deleted),
+        "native_type": native.__class__.__name__,
+        "inspect": runtime.inspect_resource("mongo.content"),
+        "doctor": runtime.doctor(),
+    }
+
+
 def run_qdrant_vector_port_example() -> dict:
     """Show Qdrant as a vector port without a real Qdrant server."""
 
@@ -603,6 +722,7 @@ def run_all() -> dict:
         "elasticsearch_search_port": run_elasticsearch_search_port_example(),
         "opensearch_search_port": run_opensearch_search_port_example(),
         "redis_data_ports": run_redis_data_ports_example(),
+        "mongodb_document_store_port": run_mongodb_document_store_port_example(),
         "sql_resource_port": run_sql_resource_port_example(),
         "sqlalchemy_resource_port": run_sqlalchemy_resource_port_example(),
         "qdrant_vector_port": run_qdrant_vector_port_example(),

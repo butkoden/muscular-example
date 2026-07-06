@@ -190,6 +190,9 @@ Learn:
   the OpenSearch SDK in the web/use-case contract;
 - Redis-backed `KeyValuePort`, `LockPort`, and `StreamPort` through a fake
   client, without importing the Redis SDK in the web/use-case contract;
+- MongoDB-backed `DocumentStorePort` through the external
+  `muscles-data-mongodb` adapter package and a fake client, without importing
+  PyMongo in web code;
 - `SqlResourcePort` as a bridge to a named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
   SQLAlchemy stays out of the web/use-case contract;
@@ -209,6 +212,10 @@ uses a separate `type: opensearch` adapter and dependency.
 Cache, lock, and simple stream scenarios against Redis go through
 `KeyValuePort`, `LockPort`, and `StreamPort`; the direct Redis client remains an
 adapter detail or advanced native access in a project.
+Document-store scenarios against MongoDB go through `DocumentStorePort`; the
+PyMongo-backed adapter lives in the separate `muscles-data-mongodb` package,
+and the direct MongoDB client remains an adapter detail or advanced native
+access.
 SQL connection lifecycle
 still belongs to `muscles-sql` or a compatible project registry, but a project
 may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
@@ -222,8 +229,8 @@ The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 Run:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
-PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_7.data_ports
 ```
 
 ## Reading Order
@@ -243,7 +250,7 @@ to documentation and OpenAPI wording.
 ## Checks
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m pytest -q
 ```
 
 Tests cover all levels, verify WSGI/ASGI parity for the full application, and
