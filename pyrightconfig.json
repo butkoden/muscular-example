@@ -7,6 +7,14 @@
     "example_5",
     "example_6",
     "example_7",
+    "example_data_common",
+    "example_data_elasticsearch_1",
+    "example_data_mongodb_1",
+    "example_data_opensearch_1",
+    "example_data_qdrant_1",
+    "example_data_redis_1",
+    "example_data_s3_1",
+    "example_data_sqlalchemy_1",
     "tests"
   ],
   "exclude": [
@@ -28,8 +36,13 @@
     "../muscles-otel/src",
     "../muscles-mcp/src",
     "../muscles-data/src",
+    "../muscles-data-elasticsearch/src",
     "../muscles-data-mongodb/src",
+    "../muscles-data-opensearch/src",
+    "../muscles-data-qdrant/src",
+    "../muscles-data-redis/src",
     "../muscles-data-s3/src",
+    "../muscles-data-sqlalchemy/src",
     "../muscular-asgi/src",
     "."
   ],

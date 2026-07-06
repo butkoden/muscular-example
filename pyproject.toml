@@ -20,6 +20,11 @@ pythonpath = [
   "../muscles-mcp/src",
   ".",
   "../muscles-data/src",
+  "../muscles-data-elasticsearch/src",
   "../muscles-data-mongodb/src",
+  "../muscles-data-opensearch/src",
+  "../muscles-data-qdrant/src",
+  "../muscles-data-redis/src",
   "../muscles-data-s3/src",
+  "../muscles-data-sqlalchemy/src",
 ]

@@ -184,50 +184,14 @@ Learn:
 - `muscles-data` as a named-resource runtime;
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
-- Elasticsearch-backed `SearchIndexPort` through a fake client, without
-  importing the Elasticsearch SDK in the web/use-case contract;
-- OpenSearch-backed `SearchIndexPort` through a fake client, without importing
-  the OpenSearch SDK in the web/use-case contract;
-- Redis-backed `KeyValuePort`, `LockPort`, and `StreamPort` through a fake
-  client, without importing the Redis SDK in the web/use-case contract;
-- S3-compatible `ObjectStorePort` through the external `muscles-data-s3`
-  adapter package and a fake client, without importing boto3 in web code;
-- MongoDB-backed `DocumentStorePort` through the external
-  `muscles-data-mongodb` adapter package and a fake client, without importing
-  PyMongo in web code;
 - `SqlResourcePort` as a bridge to a named SQL registry;
-- SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
-  SQLAlchemy stays out of the web/use-case contract;
-- Qdrant-backed `VectorSearchPort` through a fake client, without importing
-  `qdrant-client` in the web/use-case contract;
 - explicit capability mismatch errors;
 - safe diagnostics through `data.resource.inspect` and `data.doctor`;
-- in-memory/fake resources without external services.
+- in-memory resources without external services or vendor SDKs.
 
-Key idea: a project may declare different backend resources, while framework
-code uses small typed ports instead of vendor SDKs.
-Keyword/BM25 search against Elasticsearch goes through `SearchIndexPort`; the
-direct Elasticsearch client remains an adapter detail or advanced native access
-in a project.
-Keyword/BM25 search against OpenSearch also goes through `SearchIndexPort`, but
-uses a separate `type: opensearch` adapter and dependency.
-Cache, lock, and simple stream scenarios against Redis go through
-`KeyValuePort`, `LockPort`, and `StreamPort`; the direct Redis client remains an
-adapter detail or advanced native access in a project.
-Object/blob scenarios against S3-compatible storage go through
-`ObjectStorePort`; the boto3-backed adapter lives in the separate
-`muscles-data-s3` package, and the direct S3 client remains an adapter detail or
-advanced native access.
-Document-store scenarios against MongoDB go through `DocumentStorePort`; the
-PyMongo-backed adapter lives in the separate `muscles-data-mongodb` package,
-and the direct MongoDB client remains an adapter detail or advanced native
-access.
-SQL connection lifecycle
-still belongs to `muscles-sql` or a compatible project registry, but a project
-may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
-session through the same `SqlResourcePort`.
-Vector search against Qdrant goes through `VectorSearchPort`; the direct Qdrant
-client remains an adapter detail or advanced native access in a project.
+Key idea: `example_7` shows only the core contract. A project may connect real
+backend resources through separate adapter packages, while web and use-case code
+continue to use small typed ports instead of vendor SDKs.
 
 The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-7`.
@@ -235,8 +199,38 @@ The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 Run:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m example_7.data_ports
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+```
+
+## Separate Data Adapter Examples
+
+Each adapter has its own `example_data_[adapter]_1` package, so dependency on a
+specific database does not leak into the core example:
+
+- `example_data_elasticsearch_1`: `SearchIndexPort` through
+  `muscles-data-elasticsearch`;
+- `example_data_opensearch_1`: `SearchIndexPort` through
+  `muscles-data-opensearch`;
+- `example_data_redis_1`: `KeyValuePort`, `LockPort`, and `StreamPort` through
+  `muscles-data-redis`;
+- `example_data_sqlalchemy_1`: direct `SqlResourcePort` through
+  `muscles-data-sqlalchemy`;
+- `example_data_qdrant_1`: `VectorSearchPort` through `muscles-data-qdrant`;
+- `example_data_mongodb_1`: `DocumentStorePort` through
+  `muscles-data-mongodb`;
+- `example_data_s3_1`: `ObjectStorePort` through `muscles-data-s3`.
+
+Run:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-elasticsearch/src:. python3 -m example_data_elasticsearch_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-opensearch/src:. python3 -m example_data_opensearch_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-redis/src:. python3 -m example_data_redis_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-sqlalchemy/src:. python3 -m example_data_sqlalchemy_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-qdrant/src:. python3 -m example_data_qdrant_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_data_mongodb_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-s3/src:. python3 -m example_data_s3_1.data_ports
 ```
 
 ## Reading Order
@@ -256,7 +250,7 @@ to documentation and OpenAPI wording.
 ## Checks
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-elasticsearch/src:../muscles-data-mongodb/src:../muscles-data-opensearch/src:../muscles-data-qdrant/src:../muscles-data-redis/src:../muscles-data-s3/src:../muscles-data-sqlalchemy/src:. python3 -m pytest -q
 ```
 
 Tests cover all levels, verify WSGI/ASGI parity for the full application, and

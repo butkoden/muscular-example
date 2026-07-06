@@ -11,16 +11,16 @@ from example_6.protocols_observability import (
 from example_6.web import app as example_6_app
 from example_7.data_ports import (
     run_data_ports_example,
-    run_elasticsearch_search_port_example,
-    run_mongodb_document_store_port_example,
-    run_opensearch_search_port_example,
-    run_qdrant_vector_port_example,
-    run_redis_data_ports_example,
-    run_s3_object_store_port_example,
     run_sql_resource_port_example,
-    run_sqlalchemy_resource_port_example,
 )
 from example_7.web import app as example_7_app
+from example_data_elasticsearch_1.data_ports import run_example as run_elasticsearch_example
+from example_data_mongodb_1.data_ports import run_example as run_mongodb_example
+from example_data_opensearch_1.data_ports import run_example as run_opensearch_example
+from example_data_qdrant_1.data_ports import run_example as run_qdrant_example
+from example_data_redis_1.data_ports import run_example as run_redis_example
+from example_data_s3_1.data_ports import run_example as run_s3_example
+from example_data_sqlalchemy_1.data_ports import run_example as run_sqlalchemy_example
 
 
 def test_example_5_shows_sql_documents_and_ai_packages():
@@ -116,8 +116,8 @@ def test_example_7_shows_sql_resource_port_bridge():
     assert "secret" not in repr(result)
 
 
-def test_example_7_shows_sqlalchemy_resource_port_adapter():
-    result = run_sqlalchemy_resource_port_example()
+def test_example_data_sqlalchemy_1_shows_sqlalchemy_resource_port_adapter():
+    result = run_sqlalchemy_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -130,8 +130,8 @@ def test_example_7_shows_sqlalchemy_resource_port_adapter():
     assert "sqlite:///:memory:" not in repr(result)
 
 
-def test_example_7_shows_elasticsearch_search_port_adapter():
-    result = run_elasticsearch_search_port_example()
+def test_example_data_elasticsearch_1_shows_elasticsearch_search_port_adapter():
+    result = run_elasticsearch_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -146,8 +146,8 @@ def test_example_7_shows_elasticsearch_search_port_adapter():
     assert "elastic-secret" not in repr(result)
 
 
-def test_example_7_shows_opensearch_search_port_adapter():
-    result = run_opensearch_search_port_example()
+def test_example_data_opensearch_1_shows_opensearch_search_port_adapter():
+    result = run_opensearch_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -162,8 +162,8 @@ def test_example_7_shows_opensearch_search_port_adapter():
     assert "open-secret" not in repr(result)
 
 
-def test_example_7_shows_redis_key_value_lock_and_stream_ports():
-    result = run_redis_data_ports_example()
+def test_example_data_redis_1_shows_redis_key_value_lock_and_stream_ports():
+    result = run_redis_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -183,8 +183,8 @@ def test_example_7_shows_redis_key_value_lock_and_stream_ports():
     assert "redis-secret" not in repr(result)
 
 
-def test_example_7_shows_external_mongodb_document_store_port():
-    result = run_mongodb_document_store_port_example()
+def test_example_data_mongodb_1_shows_external_mongodb_document_store_port():
+    result = run_mongodb_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -199,8 +199,8 @@ def test_example_7_shows_external_mongodb_document_store_port():
     assert "mongo-secret" not in repr(result)
 
 
-def test_example_7_shows_external_s3_object_store_port():
-    result = run_s3_object_store_port_example()
+def test_example_data_s3_1_shows_external_s3_object_store_port():
+    result = run_s3_example()
 
     assert result["approach"]["contract"]
     assert result["initialized_before"] is False
@@ -216,8 +216,8 @@ def test_example_7_shows_external_s3_object_store_port():
     assert "s3-secret" not in repr(result)
 
 
-def test_example_7_shows_qdrant_vector_port_bridge():
-    result = run_qdrant_vector_port_example()
+def test_example_data_qdrant_1_shows_qdrant_vector_port_bridge():
+    result = run_qdrant_example()
 
     assert result["approach"]["contract"]
     assert result["hits"] == ["doc-1"]
@@ -236,11 +236,11 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert response.status_code == 200
     assert response.json()["level"] == 7
     assert "data_ports" in response.json()["result"]
-    assert "s3_object_store_port" in response.json()["result"]
-    assert "elasticsearch_search_port" in response.json()["result"]
-    assert "opensearch_search_port" in response.json()["result"]
-    assert "redis_data_ports" in response.json()["result"]
-    assert "mongodb_document_store_port" in response.json()["result"]
     assert "sql_resource_port" in response.json()["result"]
-    assert "sqlalchemy_resource_port" in response.json()["result"]
-    assert "qdrant_vector_port" in response.json()["result"]
+    assert "s3_object_store_port" not in response.json()["result"]
+    assert "elasticsearch_search_port" not in response.json()["result"]
+    assert "opensearch_search_port" not in response.json()["result"]
+    assert "redis_data_ports" not in response.json()["result"]
+    assert "mongodb_document_store_port" not in response.json()["result"]
+    assert "sqlalchemy_resource_port" not in response.json()["result"]
+    assert "qdrant_vector_port" not in response.json()["result"]
