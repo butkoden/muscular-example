@@ -185,6 +185,8 @@ Learn:
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - `SqlResourcePort` as a bridge to a named SQL registry;
+- Qdrant-backed `VectorSearchPort` through a fake client, without importing
+  `qdrant-client` in the web/use-case contract;
 - explicit capability mismatch errors;
 - safe diagnostics through `data.resource.inspect` and `data.doctor`;
 - in-memory/fake resources without external services.
@@ -192,6 +194,8 @@ Learn:
 Key idea: a project may declare different backend resources, while framework
 code uses small typed ports instead of vendor SDKs. SQL connection lifecycle
 still belongs to `muscles-sql` or a compatible project registry.
+Vector search against Qdrant goes through `VectorSearchPort`; the direct Qdrant
+client remains an adapter detail or advanced native access in a project.
 
 The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-7`.
