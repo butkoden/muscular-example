@@ -219,6 +219,8 @@ Shows `muscles-data` as a named-resource runtime with typed ports:
   importing the Elasticsearch SDK in the web/use-case contract;
 - OpenSearch-backed `SearchIndexPort` through a fake client, without importing
   the OpenSearch SDK in the web/use-case contract;
+- Redis-backed `KeyValuePort`, `LockPort` and `StreamPort` through a fake
+  client, without importing the Redis SDK in the web/use-case contract;
 - `SqlResourcePort` as a bridge to a named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` as a direct data adapter with SQLite,
   while SQLAlchemy stays outside the web/use-case contract;

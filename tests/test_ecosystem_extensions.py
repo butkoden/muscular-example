@@ -14,6 +14,7 @@ from example_7.data_ports import (
     run_elasticsearch_search_port_example,
     run_opensearch_search_port_example,
     run_qdrant_vector_port_example,
+    run_redis_data_ports_example,
     run_sql_resource_port_example,
     run_sqlalchemy_resource_port_example,
 )
@@ -159,6 +160,27 @@ def test_example_7_shows_opensearch_search_port_adapter():
     assert "open-secret" not in repr(result)
 
 
+def test_example_7_shows_redis_key_value_lock_and_stream_ports():
+    result = run_redis_data_ports_example()
+
+    assert result["approach"]["contract"]
+    assert result["initialized_before"] is False
+    assert result["cache_write"]["written"] == 1
+    assert result["cache_value"] == "page-2"
+    assert result["cache_exists"] is True
+    assert result["lock_acquired"] is True
+    assert result["lock_release"]["deleted"] == 1
+    assert result["stream_publish"]["written"] == 1
+    assert result["stream_messages"] == [
+        {"stream": "events", "id": "1-0", "fields": {"kind": "cursor.updated"}}
+    ]
+    assert result["stream_ack"]["matched"] == 1
+    assert result["native_type"] == "FakeRedisClient"
+    assert result["inspect"]["options"]["url"] == "***"
+    assert result["doctor"]["status"] == "ok"
+    assert "redis-secret" not in repr(result)
+
+
 def test_example_7_shows_qdrant_vector_port_bridge():
     result = run_qdrant_vector_port_example()
 
@@ -181,6 +203,7 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert "data_ports" in response.json()["result"]
     assert "elasticsearch_search_port" in response.json()["result"]
     assert "opensearch_search_port" in response.json()["result"]
+    assert "redis_data_ports" in response.json()["result"]
     assert "sql_resource_port" in response.json()["result"]
     assert "sqlalchemy_resource_port" in response.json()["result"]
     assert "qdrant_vector_port" in response.json()["result"]
