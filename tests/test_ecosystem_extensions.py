@@ -16,6 +16,7 @@ from example_7.data_ports import (
     run_opensearch_search_port_example,
     run_qdrant_vector_port_example,
     run_redis_data_ports_example,
+    run_s3_object_store_port_example,
     run_sql_resource_port_example,
     run_sqlalchemy_resource_port_example,
 )
@@ -198,6 +199,23 @@ def test_example_7_shows_external_mongodb_document_store_port():
     assert "mongo-secret" not in repr(result)
 
 
+def test_example_7_shows_external_s3_object_store_port():
+    result = run_s3_object_store_port_example()
+
+    assert result["approach"]["contract"]
+    assert result["initialized_before"] is False
+    assert result["put"]["written"] == 1
+    assert result["blob"] == {"key": "docs/readme.txt", "content": "hello", "content_type": "text/plain"}
+    assert result["listed_keys"] == ["docs/guide.txt", "docs/readme.txt"]
+    assert result["stored_keys"] == ["raw/docs/readme.txt"]
+    assert result["deleted"]["deleted"] == 1
+    assert result["native_type"] == "FakeS3Client"
+    assert result["inspect"]["options"]["endpoint_url"] == "***"
+    assert result["inspect"]["details"]["backend"] == "s3"
+    assert result["doctor"]["status"] == "ok"
+    assert "s3-secret" not in repr(result)
+
+
 def test_example_7_shows_qdrant_vector_port_bridge():
     result = run_qdrant_vector_port_example()
 
@@ -218,6 +236,7 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert response.status_code == 200
     assert response.json()["level"] == 7
     assert "data_ports" in response.json()["result"]
+    assert "s3_object_store_port" in response.json()["result"]
     assert "elasticsearch_search_port" in response.json()["result"]
     assert "opensearch_search_port" in response.json()["result"]
     assert "redis_data_ports" in response.json()["result"]

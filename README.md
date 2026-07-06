@@ -221,6 +221,8 @@ Shows `muscles-data` as a named-resource runtime with typed ports:
   the OpenSearch SDK in the web/use-case contract;
 - Redis-backed `KeyValuePort`, `LockPort` and `StreamPort` through a fake
   client, without importing the Redis SDK in the web/use-case contract;
+- S3-compatible `ObjectStorePort` through external `muscles-data-s3` adapter
+  package and a fake client, without importing boto3 in web code;
 - MongoDB-backed `DocumentStorePort` through external `muscles-data-mongodb`
   adapter package and a fake client, without importing PyMongo in web code;
 - `SqlResourcePort` as a bridge to a named SQL registry;
@@ -238,8 +240,8 @@ The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
 Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_7.data_ports
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m example_7.data_ports
 ```
 
 Open:
@@ -249,7 +251,7 @@ Open:
 ## Tests
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-mongodb/src:../muscles-data-s3/src:. python3 -m pytest -q
 ```
 
 The test suite checks every level, verifies that level 4 behaves the same
