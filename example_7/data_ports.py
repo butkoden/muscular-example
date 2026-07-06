@@ -25,6 +25,7 @@ from muscles_data.ports import (
 )
 from muscles_data.runtime import DataRuntime
 from muscles_data_mongodb import MongoDocumentStoreFactory
+from muscles_data_s3 import S3ObjectStoreFactory
 
 
 DEVELOPMENT_APPROACH = {
@@ -320,6 +321,53 @@ class FakeRedisClient:
 
     def ping(self) -> bool:
         return True
+
+
+class FakeS3Body:
+    def __init__(self, content: bytes) -> None:
+        self.content = content
+
+    def read(self) -> bytes:
+        return self.content
+
+
+class FakeS3Client:
+    def __init__(self) -> None:
+        self.objects: dict[tuple[str, str], dict[str, Any]] = {}
+
+    def put_object(self, **kwargs):
+        self.objects[(kwargs["Bucket"], kwargs["Key"])] = {
+            "Body": bytes(kwargs["Body"]),
+            "ContentType": kwargs.get("ContentType"),
+            "Metadata": dict(kwargs.get("Metadata") or {}),
+        }
+        return {"ETag": '"example"'}
+
+    def get_object(self, **kwargs):
+        item = self.objects[(kwargs["Bucket"], kwargs["Key"])]
+        return {
+            "Body": FakeS3Body(item["Body"]),
+            "ContentType": item.get("ContentType"),
+            "Metadata": dict(item.get("Metadata") or {}),
+        }
+
+    def list_objects_v2(self, **kwargs):
+        bucket = kwargs["Bucket"]
+        prefix = kwargs.get("Prefix", "")
+        max_keys = int(kwargs.get("MaxKeys", 100))
+        contents = [
+            {"Key": key, "Size": len(item["Body"])}
+            for (stored_bucket, key), item in sorted(self.objects.items())
+            if stored_bucket == bucket and key.startswith(prefix)
+        ]
+        return {"Contents": contents[:max_keys]}
+
+    def delete_object(self, **kwargs):
+        self.objects.pop((kwargs["Bucket"], kwargs["Key"]), None)
+        return {}
+
+    def head_bucket(self, **_kwargs):
+        return {"ResponseMetadata": {"HTTPStatusCode": 200}}
 
 
 class FakeMongoAdmin:
@@ -622,6 +670,61 @@ def run_redis_data_ports_example() -> dict:
     }
 
 
+def run_s3_object_store_port_example() -> dict:
+    """Show S3-compatible object storage as an external object-store port."""
+
+    client = FakeS3Client()
+    catalog = DataAdapterCatalog.with_defaults()
+    catalog.register(S3ObjectStoreFactory(client_factory=lambda _config: client))
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "objects.docs": {
+                            "type": "s3",
+                            "endpoint_url": "https://user:s3-secret@s3.example",
+                            "bucket": "documents",
+                            "region_name": "us-east-1",
+                            "prefix": "raw",
+                            "max_keys": 5,
+                            "native_client": True,
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=catalog,
+    )
+
+    initialized_before = runtime.list_resources()[0]["initialized"]
+    objects = cast(ObjectStorePort, runtime.require_port("objects.docs", ObjectStorePort))
+    put = objects.put_object(
+        "docs/readme.txt",
+        b"hello",
+        content_type="text/plain",
+        metadata={"owner": "denis"},
+    )
+    blob = objects.get_object("docs/readme.txt")
+    objects.put_object("docs/guide.txt", b"guide")
+    listed = objects.list_objects(prefix="docs", limit=10)
+    deleted = objects.delete_object("docs/guide.txt")
+    native = runtime.require_resource("objects.docs", DataCapability.NATIVE_CLIENT).native_client()
+
+    return {
+        "approach": development_approach(),
+        "initialized_before": initialized_before,
+        "put": asdict(put),
+        "blob": {"key": blob.key, "content": blob.content.decode("utf-8"), "content_type": blob.content_type},
+        "listed_keys": [item.key for item in listed],
+        "stored_keys": [key for _bucket, key in sorted(client.objects)],
+        "deleted": asdict(deleted),
+        "native_type": native.__class__.__name__,
+        "inspect": runtime.inspect_resource("objects.docs"),
+        "doctor": runtime.doctor(),
+    }
+
+
 def run_mongodb_document_store_port_example() -> dict:
     """Show MongoDB as an external document-store port without a real MongoDB server."""
 
@@ -722,6 +825,7 @@ def run_all() -> dict:
         "elasticsearch_search_port": run_elasticsearch_search_port_example(),
         "opensearch_search_port": run_opensearch_search_port_example(),
         "redis_data_ports": run_redis_data_ports_example(),
+        "s3_object_store_port": run_s3_object_store_port_example(),
         "mongodb_document_store_port": run_mongodb_document_store_port_example(),
         "sql_resource_port": run_sql_resource_port_example(),
         "sqlalchemy_resource_port": run_sqlalchemy_resource_port_example(),
