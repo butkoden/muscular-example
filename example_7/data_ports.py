@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-import json
+from collections.abc import Mapping
 from dataclasses import asdict
+import importlib
+import json
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 from muscles import ActionDispatcher
+from muscles_data import DataCapability
 from muscles_data.catalog import DataAdapterCatalog
 from muscles_data.config import DataConfig
 from muscles_data.errors import DataCapabilityError
@@ -215,6 +218,54 @@ def run_sql_resource_port_example() -> dict:
     }
 
 
+def run_sqlalchemy_resource_port_example() -> dict:
+    """Show a direct SQLAlchemy resource through the same SQL port."""
+
+    sqlalchemy = importlib.import_module("sqlalchemy")
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "sql.local": {
+                            "type": "sqlalchemy",
+                            "url": "sqlite:///:memory:",
+                            "name": "local_sqlite",
+                            "native_client": True,
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=DataAdapterCatalog.with_defaults(),
+    )
+
+    initialized_before = runtime.list_resources()[0]["initialized"]
+    sql = cast(SqlResourcePort, runtime.require_port("sql.local", SqlResourcePort))
+
+    session_context = cast(Any, sql.session())
+    with session_context as session:
+        session.execute(sqlalchemy.text("create table notes (id integer primary key, title varchar)"))
+        session.execute(sqlalchemy.text("insert into notes (title) values (:title)"), {"title": "SQLAlchemy port"})
+        rows = session.execute(sqlalchemy.text("select title from notes order by id")).fetchall()
+
+    native = cast(
+        Mapping[str, object],
+        runtime.require_resource("sql.local", DataCapability.NATIVE_CLIENT).native_client(),
+    )
+    result = {
+        "approach": development_approach(),
+        "initialized_before": initialized_before,
+        "connection_name": sql.connection_name(),
+        "rows": [row[0] for row in rows],
+        "native_keys": sorted(native),
+        "inspect": runtime.inspect_resource("sql.local"),
+        "doctor": runtime.doctor(),
+    }
+    runtime.close()
+    return result
+
+
 def run_qdrant_vector_port_example() -> dict:
     """Show Qdrant as a vector port without a real Qdrant server."""
 
@@ -265,6 +316,7 @@ def run_all() -> dict:
     return {
         "data_ports": run_data_ports_example(),
         "sql_resource_port": run_sql_resource_port_example(),
+        "sqlalchemy_resource_port": run_sqlalchemy_resource_port_example(),
         "qdrant_vector_port": run_qdrant_vector_port_example(),
     }
 

@@ -9,7 +9,12 @@ from example_6.protocols_observability import (
     run_sse_example,
 )
 from example_6.web import app as example_6_app
-from example_7.data_ports import run_data_ports_example, run_qdrant_vector_port_example, run_sql_resource_port_example
+from example_7.data_ports import (
+    run_data_ports_example,
+    run_qdrant_vector_port_example,
+    run_sql_resource_port_example,
+    run_sqlalchemy_resource_port_example,
+)
 from example_7.web import app as example_7_app
 
 
@@ -106,6 +111,20 @@ def test_example_7_shows_sql_resource_port_bridge():
     assert "secret" not in repr(result)
 
 
+def test_example_7_shows_sqlalchemy_resource_port_adapter():
+    result = run_sqlalchemy_resource_port_example()
+
+    assert result["approach"]["contract"]
+    assert result["initialized_before"] is False
+    assert result["connection_name"] == "local_sqlite"
+    assert result["rows"] == ["SQLAlchemy port"]
+    assert result["native_keys"] == ["engine", "session_factory"]
+    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["details"]["backend"] == "sqlalchemy"
+    assert result["doctor"]["status"] == "ok"
+    assert "sqlite:///:memory:" not in repr(result)
+
+
 def test_example_7_shows_qdrant_vector_port_bridge():
     result = run_qdrant_vector_port_example()
 
@@ -127,4 +146,5 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert response.json()["level"] == 7
     assert "data_ports" in response.json()["result"]
     assert "sql_resource_port" in response.json()["result"]
+    assert "sqlalchemy_resource_port" in response.json()["result"]
     assert "qdrant_vector_port" in response.json()["result"]

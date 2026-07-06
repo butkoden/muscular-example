@@ -183,6 +183,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - `SqlResourcePort` как bridge к named SQL registry;
+- SQLAlchemy-backed `SqlResourcePort` как direct data adapter на SQLite, при
+  этом SQLAlchemy не попадает в web/use-case contract;
 - Qdrant-backed `VectorSearchPort` через fake client, без импорта
   `qdrant-client` в web/use-case contract;
 - явную ошибку capability mismatch;
@@ -192,7 +194,9 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 Ключевая идея: проект может объявить разные backend resources, но код уровня
 фреймворка работает через маленькие typed ports, а не через vendor SDK.
 SQL-подключения при этом остаются ответственностью `muscles-sql` или
-совместимого project registry.
+совместимого project registry, но проект также может выбрать прямой
+`type: sqlalchemy` resource, если ему нужен SQLAlchemy session через тот же
+`SqlResourcePort`.
 Vector search к Qdrant идет через `VectorSearchPort`; прямой Qdrant client
 остается adapter detail или advanced native access в проекте.
 
