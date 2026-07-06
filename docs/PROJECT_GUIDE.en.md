@@ -186,6 +186,8 @@ Learn:
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - Elasticsearch-backed `SearchIndexPort` through a fake client, without
   importing the Elasticsearch SDK in the web/use-case contract;
+- OpenSearch-backed `SearchIndexPort` through a fake client, without importing
+  the OpenSearch SDK in the web/use-case contract;
 - `SqlResourcePort` as a bridge to a named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
   SQLAlchemy stays out of the web/use-case contract;
@@ -200,6 +202,8 @@ code uses small typed ports instead of vendor SDKs.
 Keyword/BM25 search against Elasticsearch goes through `SearchIndexPort`; the
 direct Elasticsearch client remains an adapter detail or advanced native access
 in a project.
+Keyword/BM25 search against OpenSearch also goes through `SearchIndexPort`, but
+uses a separate `type: opensearch` adapter and dependency.
 SQL connection lifecycle
 still belongs to `muscles-sql` or a compatible project registry, but a project
 may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
