@@ -28,6 +28,7 @@ def test_example_5_shows_sql_documents_and_ai_packages():
     assert documents["loaded_count"] == 2
     assert documents["chunks_count"] >= 1
     assert documents["sync_operations"]
+    assert all("name" in operation for operation in documents["sync_operations"])
 
     assert ai["answer"]
     assert "default" in ai["sources"]
