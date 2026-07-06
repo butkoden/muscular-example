@@ -215,6 +215,7 @@ Shows `muscles-data` as a named-resource runtime with typed ports:
 
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` as a bridge to a named SQL registry;
 - capability mismatch as an explicit error;
 - safe `data.resource.inspect` and `data.doctor` diagnostics;
 - in-memory/fake resources without external services.

@@ -184,12 +184,14 @@ Learn:
 - `muscles-data` as a named-resource runtime;
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` as a bridge to a named SQL registry;
 - explicit capability mismatch errors;
 - safe diagnostics through `data.resource.inspect` and `data.doctor`;
 - in-memory/fake resources without external services.
 
 Key idea: a project may declare different backend resources, while framework
-code uses small typed ports instead of vendor SDKs.
+code uses small typed ports instead of vendor SDKs. SQL connection lifecycle
+still belongs to `muscles-sql` or a compatible project registry.
 
 The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-7`.

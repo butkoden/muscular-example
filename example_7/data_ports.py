@@ -5,8 +5,11 @@ from types import SimpleNamespace
 
 from muscles import ActionDispatcher
 from muscles_data import init_package
+from muscles_data.catalog import DataAdapterCatalog
+from muscles_data.config import DataConfig
 from muscles_data.errors import DataCapabilityError
-from muscles_data.ports import KeyValuePort, ObjectStorePort, SearchIndexPort, VectorSearchPort
+from muscles_data.ports import KeyValuePort, ObjectStorePort, SearchIndexPort, SqlResourcePort, VectorSearchPort
+from muscles_data.runtime import DataRuntime
 
 
 DEVELOPMENT_APPROACH = {
@@ -85,8 +88,62 @@ def run_data_ports_example() -> dict:
     }
 
 
+class FakeSqlRegistry:
+    def session(self, name: str = "default"):
+        return f"session:{name}"
+
+    def session_factory(self, name: str = "default"):
+        return f"factory:{name}"
+
+    def inspect(self, name: str = "default"):
+        return {
+            "status": "ok",
+            "connection": {
+                "name": name,
+                "url": "sqlite://secret@/:memory:",
+                "safe_url": "sqlite:///:memory:",
+                "role": "read_write",
+            },
+        }
+
+
+def run_sql_resource_port_example() -> dict:
+    """Show SQL as a data resource bridge without importing SQLAlchemy."""
+
+    registry = FakeSqlRegistry()
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "sql.main": {
+                            "type": "sql",
+                            "connection": "main",
+                            "role": "read_write",
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=DataAdapterCatalog.with_defaults(sql_registry_provider=lambda: registry),
+    )
+
+    sql = runtime.require_port("sql.main", SqlResourcePort)
+    return {
+        "approach": development_approach(),
+        "connection_name": sql.connection_name(),
+        "session": sql.session(),
+        "session_factory": sql.session_factory(),
+        "inspect": sql.inspect(),
+        "doctor": sql.doctor(),
+    }
+
+
 def run_all() -> dict:
-    return {"data_ports": run_data_ports_example()}
+    return {
+        "data_ports": run_data_ports_example(),
+        "sql_resource_port": run_sql_resource_port_example(),
+    }
 
 
 def main() -> None:

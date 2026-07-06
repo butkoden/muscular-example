@@ -182,12 +182,15 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 - `muscles-data` как runtime именованных data resources;
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` как bridge к named SQL registry;
 - явную ошибку capability mismatch;
 - безопасные diagnostics через `data.resource.inspect` и `data.doctor`;
 - in-memory/fake resources без внешних сервисов.
 
 Ключевая идея: проект может объявить разные backend resources, но код уровня
 фреймворка работает через маленькие typed ports, а не через vendor SDK.
+SQL-подключения при этом остаются ответственностью `muscles-sql` или
+совместимого project registry.
 
 Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-7`.

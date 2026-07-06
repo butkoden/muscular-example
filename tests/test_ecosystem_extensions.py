@@ -9,7 +9,7 @@ from example_6.protocols_observability import (
     run_sse_example,
 )
 from example_6.web import app as example_6_app
-from example_7.data_ports import run_data_ports_example
+from example_7.data_ports import run_data_ports_example, run_sql_resource_port_example
 from example_7.web import app as example_7_app
 
 
@@ -93,9 +93,23 @@ def test_example_7_shows_typed_data_ports_and_diagnostics():
     assert "native_client" not in repr(result["inspect"])
 
 
+def test_example_7_shows_sql_resource_port_bridge():
+    result = run_sql_resource_port_example()
+
+    assert result["approach"]["contract"]
+    assert result["connection_name"] == "main"
+    assert result["session"] == "session:main"
+    assert result["session_factory"] == "factory:main"
+    assert result["inspect"]["connection"]["url"] == "***"
+    assert result["inspect"]["connection"]["safe_url"] == "sqlite:///:memory:"
+    assert result["doctor"]["status"] == "ok"
+    assert "secret" not in repr(result)
+
+
 def test_example_7_keeps_example_1_wsgi_foundation():
     response = WsgiTestClient(example_7_app).get("/example-7")
 
     assert response.status_code == 200
     assert response.json()["level"] == 7
     assert "data_ports" in response.json()["result"]
+    assert "sql_resource_port" in response.json()["result"]
