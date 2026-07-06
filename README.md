@@ -216,6 +216,8 @@ Shows `muscles-data` as a named-resource runtime with typed ports:
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - `SqlResourcePort` as a bridge to a named SQL registry;
+- Qdrant-backed `VectorSearchPort` through a fake client, without importing
+  `qdrant-client` in the web/use-case contract;
 - capability mismatch as an explicit error;
 - safe `data.resource.inspect` and `data.doctor` diagnostics;
 - in-memory/fake resources without external services.

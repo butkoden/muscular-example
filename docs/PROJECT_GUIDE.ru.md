@@ -183,6 +183,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - `SqlResourcePort` как bridge к named SQL registry;
+- Qdrant-backed `VectorSearchPort` через fake client, без импорта
+  `qdrant-client` в web/use-case contract;
 - явную ошибку capability mismatch;
 - безопасные diagnostics через `data.resource.inspect` и `data.doctor`;
 - in-memory/fake resources без внешних сервисов.
@@ -191,6 +193,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 фреймворка работает через маленькие typed ports, а не через vendor SDK.
 SQL-подключения при этом остаются ответственностью `muscles-sql` или
 совместимого project registry.
+Vector search к Qdrant идет через `VectorSearchPort`; прямой Qdrant client
+остается adapter detail или advanced native access в проекте.
 
 Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-7`.
