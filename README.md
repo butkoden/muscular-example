@@ -207,10 +207,36 @@ Open:
 
 - http://localhost:8080/example-6
 
+### Level 7: typed data ports
+
+Package: `example_7`
+
+Shows `muscles-data` as a named-resource runtime with typed ports:
+
+- `DataRuntime.require_port(...)`;
+- `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- capability mismatch as an explicit error;
+- safe `data.resource.inspect` and `data.doctor` diagnostics;
+- in-memory/fake resources without external services.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+```
+
+Open:
+
+- http://localhost:8080/example-7
+
 ## Tests
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:. python3 -m pytest -q
 ```
 
 The test suite checks every level, verifies that level 4 behaves the same
@@ -232,5 +258,5 @@ docker compose up --build
 
 When `muscles`, `muscles-wsgi`, `muscles-asgi`, `muscles-cli`,
 `muscles-sql`, `muscles-ai`, `muscles-documents`, `muscles-jsonrpc`,
-`muscles-sse`, `muscles-otel`, or `muscles-mcp` behavior changes, this example
-should be updated in the same wave and verified by tests.
+`muscles-sse`, `muscles-otel`, `muscles-mcp`, or `muscles-data` behavior
+changes, this example should be updated in the same wave and verified by tests.
