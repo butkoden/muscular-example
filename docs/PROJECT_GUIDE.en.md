@@ -184,6 +184,8 @@ Learn:
 - `muscles-data` as a named-resource runtime;
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- Elasticsearch-backed `SearchIndexPort` through a fake client, without
+  importing the Elasticsearch SDK in the web/use-case contract;
 - `SqlResourcePort` as a bridge to a named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
   SQLAlchemy stays out of the web/use-case contract;
@@ -194,7 +196,11 @@ Learn:
 - in-memory/fake resources without external services.
 
 Key idea: a project may declare different backend resources, while framework
-code uses small typed ports instead of vendor SDKs. SQL connection lifecycle
+code uses small typed ports instead of vendor SDKs.
+Keyword/BM25 search against Elasticsearch goes through `SearchIndexPort`; the
+direct Elasticsearch client remains an adapter detail or advanced native access
+in a project.
+SQL connection lifecycle
 still belongs to `muscles-sql` or a compatible project registry, but a project
 may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
 session through the same `SqlResourcePort`.

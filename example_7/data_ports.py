@@ -186,6 +186,42 @@ class FakeQdrantModels:
             self.filter = filter
 
 
+class FakeElasticsearchIndices:
+    def exists(self, *, index: str) -> bool:
+        return index == "docs"
+
+
+class FakeElasticsearchClient:
+    def __init__(self) -> None:
+        self.indices = FakeElasticsearchIndices()
+
+    def search(self, **_kwargs):
+        return {
+            "hits": {
+                "hits": [
+                    {
+                        "_id": "doc-1",
+                        "_score": 3.2,
+                        "_source": {"text": "Muscles data ports", "metadata": {"section": "docs"}},
+                        "highlight": {"text": ["<em>Muscles</em> data ports"]},
+                    }
+                ]
+            }
+        }
+
+    def index(self, **_kwargs):
+        return {"result": "created"}
+
+    def delete(self, **_kwargs):
+        return {"result": "deleted"}
+
+    def delete_by_query(self, **_kwargs):
+        return {"deleted": 1}
+
+    def ping(self) -> bool:
+        return True
+
+
 def run_sql_resource_port_example() -> dict:
     """Show SQL as a data resource bridge without importing SQLAlchemy."""
 
@@ -266,6 +302,52 @@ def run_sqlalchemy_resource_port_example() -> dict:
     return result
 
 
+def run_elasticsearch_search_port_example() -> dict:
+    """Show Elasticsearch as a search port without a real Elasticsearch server."""
+
+    client = FakeElasticsearchClient()
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "search.docs": {
+                            "type": "elasticsearch",
+                            "url": "https://elastic.example",
+                            "api_key": "elastic-secret",
+                            "index": "docs",
+                            "timeout": 1,
+                            "native_client": True,
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=DataAdapterCatalog.with_defaults(elasticsearch_client_factory=lambda _config: client),
+    )
+
+    initialized_before = runtime.list_resources()[0]["initialized"]
+    search = cast(SearchIndexPort, runtime.require_port("search.docs", SearchIndexPort))
+    upsert = search.upsert_documents([
+        {"id": "doc-1", "text": "Muscles data ports", "metadata": {"section": "docs"}},
+    ])
+    hits = search.search_text("muscles", filters={"section": "docs"}, limit=1, options={"highlight": True})
+    deleted = search.delete_documents(filters={"section": "docs"})
+    native = runtime.require_resource("search.docs", DataCapability.NATIVE_CLIENT).native_client()
+
+    return {
+        "approach": development_approach(),
+        "initialized_before": initialized_before,
+        "hits": [hit.id for hit in hits],
+        "highlights": hits[0].highlights,
+        "upsert": asdict(upsert),
+        "deleted": asdict(deleted),
+        "native_type": native.__class__.__name__,
+        "inspect": runtime.inspect_resource("search.docs"),
+        "doctor": runtime.doctor(),
+    }
+
+
 def run_qdrant_vector_port_example() -> dict:
     """Show Qdrant as a vector port without a real Qdrant server."""
 
@@ -315,6 +397,7 @@ def run_qdrant_vector_port_example() -> dict:
 def run_all() -> dict:
     return {
         "data_ports": run_data_ports_example(),
+        "elasticsearch_search_port": run_elasticsearch_search_port_example(),
         "sql_resource_port": run_sql_resource_port_example(),
         "sqlalchemy_resource_port": run_sqlalchemy_resource_port_example(),
         "qdrant_vector_port": run_qdrant_vector_port_example(),

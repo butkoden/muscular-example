@@ -182,6 +182,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 - `muscles-data` как runtime именованных data resources;
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- Elasticsearch-backed `SearchIndexPort` через fake client, без импорта
+  Elasticsearch SDK в web/use-case contract;
 - `SqlResourcePort` как bridge к named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` как direct data adapter на SQLite, при
   этом SQLAlchemy не попадает в web/use-case contract;
@@ -193,6 +195,9 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 
 Ключевая идея: проект может объявить разные backend resources, но код уровня
 фреймворка работает через маленькие typed ports, а не через vendor SDK.
+Keyword/BM25 search к Elasticsearch идет через `SearchIndexPort`; прямой
+Elasticsearch client остается adapter detail или advanced native access в
+проекте.
 SQL-подключения при этом остаются ответственностью `muscles-sql` или
 совместимого project registry, но проект также может выбрать прямой
 `type: sqlalchemy` resource, если ему нужен SQLAlchemy session через тот же
