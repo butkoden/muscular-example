@@ -12,6 +12,7 @@ from example_6.web import app as example_6_app
 from example_7.data_ports import (
     run_data_ports_example,
     run_elasticsearch_search_port_example,
+    run_opensearch_search_port_example,
     run_qdrant_vector_port_example,
     run_sql_resource_port_example,
     run_sqlalchemy_resource_port_example,
@@ -142,6 +143,22 @@ def test_example_7_shows_elasticsearch_search_port_adapter():
     assert "elastic-secret" not in repr(result)
 
 
+def test_example_7_shows_opensearch_search_port_adapter():
+    result = run_opensearch_search_port_example()
+
+    assert result["approach"]["contract"]
+    assert result["initialized_before"] is False
+    assert result["hits"] == ["doc-1"]
+    assert result["highlights"]["text"] == ["<em>Muscles</em> data ports"]
+    assert result["upsert"]["written"] == 1
+    assert result["deleted"]["deleted"] == 1
+    assert result["native_type"] == "FakeOpenSearchClient"
+    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["options"]["password"] == "***"
+    assert result["doctor"]["status"] == "ok"
+    assert "open-secret" not in repr(result)
+
+
 def test_example_7_shows_qdrant_vector_port_bridge():
     result = run_qdrant_vector_port_example()
 
@@ -163,6 +180,7 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert response.json()["level"] == 7
     assert "data_ports" in response.json()["result"]
     assert "elasticsearch_search_port" in response.json()["result"]
+    assert "opensearch_search_port" in response.json()["result"]
     assert "sql_resource_port" in response.json()["result"]
     assert "sqlalchemy_resource_port" in response.json()["result"]
     assert "qdrant_vector_port" in response.json()["result"]
