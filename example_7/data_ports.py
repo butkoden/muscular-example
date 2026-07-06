@@ -13,7 +13,15 @@ from muscles_data.catalog import DataAdapterCatalog
 from muscles_data.config import DataConfig
 from muscles_data.errors import DataCapabilityError
 from muscles_data.package import init_package
-from muscles_data.ports import KeyValuePort, ObjectStorePort, SearchIndexPort, SqlResourcePort, VectorSearchPort
+from muscles_data.ports import (
+    KeyValuePort,
+    LockPort,
+    ObjectStorePort,
+    SearchIndexPort,
+    SqlResourcePort,
+    StreamPort,
+    VectorSearchPort,
+)
 from muscles_data.runtime import DataRuntime
 
 
@@ -258,6 +266,60 @@ class FakeOpenSearchClient:
         return True
 
 
+class FakeRedisClient:
+    def __init__(self) -> None:
+        self.values: dict[str, Any] = {}
+        self.streams: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+
+    def set(self, name: str, value, **kwargs):
+        if kwargs.get("nx") and name in self.values:
+            return False
+        self.values[name] = value
+        return True
+
+    def get(self, name: str):
+        return self.values.get(name)
+
+    def delete(self, *names: str) -> int:
+        deleted = 0
+        for name in names:
+            deleted += 1 if self.values.pop(name, None) is not None else 0
+        return deleted
+
+    def exists(self, *names: str) -> int:
+        return sum(1 for name in names if name in self.values)
+
+    def eval(self, _script: str, _numkeys: int, key: str, expected_token: str):
+        if self.values.get(key) != expected_token:
+            return 0
+        self.values.pop(key, None)
+        return 1
+
+    def xadd(self, name: str, fields: dict[str, Any]):
+        stream = self.streams.setdefault(name, [])
+        message_id = f"{len(stream) + 1}-0"
+        stream.append((message_id, dict(fields)))
+        return message_id
+
+    def xread(self, streams: dict[str, str], count: int | None = None):
+        output = []
+        for name, cursor in streams.items():
+            messages = [
+                (message_id, fields)
+                for message_id, fields in self.streams.get(name, [])
+                if cursor in {"0", "0-0"} or message_id > cursor
+            ]
+            output.append((name, messages[:count]))
+        return output
+
+    def xack(self, name: str, _groupname: str, *ids: str) -> int:
+        known = {message_id for message_id, _fields in self.streams.get(name, [])}
+        return sum(1 for message_id in ids if message_id in known)
+
+    def ping(self) -> bool:
+        return True
+
+
 def run_sql_resource_port_example() -> dict:
     """Show SQL as a data resource bridge without importing SQLAlchemy."""
 
@@ -431,6 +493,64 @@ def run_opensearch_search_port_example() -> dict:
     }
 
 
+def run_redis_data_ports_example() -> dict:
+    """Show Redis as key-value, lock and stream ports without a real Redis server."""
+
+    client = FakeRedisClient()
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "cache.default": {
+                            "type": "redis",
+                            "url": "redis://:redis-secret@localhost:6379/0",
+                            "namespace": "demo",
+                            "stream_group": "workers",
+                            "timeout": 1,
+                            "native_client": True,
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=DataAdapterCatalog.with_defaults(redis_client_factory=lambda _config: client),
+    )
+
+    initialized_before = runtime.list_resources()[0]["initialized"]
+    cache = cast(KeyValuePort, runtime.require_port("cache.default", KeyValuePort))
+    cache_write = cache.set("cursor", b"page-2", ttl_seconds=60)
+    cache_value = cache.get("cursor")
+    cache_exists = cache.exists("cursor")
+
+    lock = cast(LockPort, runtime.require_port("cache.default", LockPort))
+    handle = lock.acquire_lock("sync", ttl_seconds=30)
+    lock_release = lock.release_lock(handle)
+
+    stream = cast(StreamPort, runtime.require_port("cache.default", StreamPort))
+    published = stream.publish("events", {"kind": "cursor.updated"})
+    read = stream.read("events", limit=10)
+    acked = stream.ack("events", read.cursor or "0-0")
+
+    native = runtime.require_resource("cache.default", DataCapability.NATIVE_CLIENT).native_client()
+
+    return {
+        "approach": development_approach(),
+        "initialized_before": initialized_before,
+        "cache_write": asdict(cache_write),
+        "cache_value": cache_value.decode("utf-8") if cache_value else None,
+        "cache_exists": cache_exists,
+        "lock_acquired": handle is not None,
+        "lock_release": asdict(lock_release),
+        "stream_publish": asdict(published),
+        "stream_messages": read.messages,
+        "stream_ack": asdict(acked),
+        "native_type": native.__class__.__name__,
+        "inspect": runtime.inspect_resource("cache.default"),
+        "doctor": runtime.doctor(),
+    }
+
+
 def run_qdrant_vector_port_example() -> dict:
     """Show Qdrant as a vector port without a real Qdrant server."""
 
@@ -482,6 +602,7 @@ def run_all() -> dict:
         "data_ports": run_data_ports_example(),
         "elasticsearch_search_port": run_elasticsearch_search_port_example(),
         "opensearch_search_port": run_opensearch_search_port_example(),
+        "redis_data_ports": run_redis_data_ports_example(),
         "sql_resource_port": run_sql_resource_port_example(),
         "sqlalchemy_resource_port": run_sqlalchemy_resource_port_example(),
         "qdrant_vector_port": run_qdrant_vector_port_example(),

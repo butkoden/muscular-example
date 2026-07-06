@@ -186,6 +186,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
   Elasticsearch SDK в web/use-case contract;
 - OpenSearch-backed `SearchIndexPort` через fake client, без импорта
   OpenSearch SDK в web/use-case contract;
+- Redis-backed `KeyValuePort`, `LockPort` и `StreamPort` через fake client,
+  без импорта Redis SDK в web/use-case contract;
 - `SqlResourcePort` как bridge к named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` как direct data adapter на SQLite, при
   этом SQLAlchemy не попадает в web/use-case contract;
@@ -202,6 +204,9 @@ Elasticsearch client остается adapter detail или advanced native acce
 проекте.
 Keyword/BM25 search к OpenSearch тоже идет через `SearchIndexPort`, но через
 отдельный `type: opensearch` adapter и отдельную dependency.
+Cache, lock и простые stream-сценарии к Redis идут через `KeyValuePort`,
+`LockPort` и `StreamPort`; прямой Redis client остается adapter detail или
+advanced native access в проекте.
 SQL-подключения при этом остаются ответственностью `muscles-sql` или
 совместимого project registry, но проект также может выбрать прямой
 `type: sqlalchemy` resource, если ему нужен SQLAlchemy session через тот же

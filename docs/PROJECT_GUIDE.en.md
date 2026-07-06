@@ -188,6 +188,8 @@ Learn:
   importing the Elasticsearch SDK in the web/use-case contract;
 - OpenSearch-backed `SearchIndexPort` through a fake client, without importing
   the OpenSearch SDK in the web/use-case contract;
+- Redis-backed `KeyValuePort`, `LockPort`, and `StreamPort` through a fake
+  client, without importing the Redis SDK in the web/use-case contract;
 - `SqlResourcePort` as a bridge to a named SQL registry;
 - SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
   SQLAlchemy stays out of the web/use-case contract;
@@ -204,6 +206,9 @@ direct Elasticsearch client remains an adapter detail or advanced native access
 in a project.
 Keyword/BM25 search against OpenSearch also goes through `SearchIndexPort`, but
 uses a separate `type: opensearch` adapter and dependency.
+Cache, lock, and simple stream scenarios against Redis go through
+`KeyValuePort`, `LockPort`, and `StreamPort`; the direct Redis client remains an
+adapter detail or advanced native access in a project.
 SQL connection lifecycle
 still belongs to `muscles-sql` or a compatible project registry, but a project
 may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
