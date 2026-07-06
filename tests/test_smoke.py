@@ -1,10 +1,11 @@
 import io
 import json
+from typing import Any
 
 from example_4.web import app
 
 
-BASE_ENV = {
+BASE_ENV: dict[str, Any] = {
     "SERVER_PROTOCOL": "HTTP/1.1",
     "UWSGI_ROUTER": "http",
     "HTTP_HOST": "localhost:8080",
@@ -15,14 +16,14 @@ BASE_ENV = {
 }
 
 
-def call(path, method="GET", body=b"", content_type="text/html"):
-    status_headers = {}
+def call(path: str, method: str = "GET", body: bytes = b"", content_type: str = "text/html"):
+    status_headers: dict[str, Any] = {}
 
-    def start_response(status, headers):
+    def start_response(status: str, headers: list[tuple[str, str]]):
         status_headers["status"] = status
         status_headers["headers"] = headers
 
-    env = dict(BASE_ENV)
+    env: dict[str, Any] = dict(BASE_ENV)
     env.update({
         "REQUEST_METHOD": method,
         "REQUEST_URI": path,
@@ -35,7 +36,7 @@ def call(path, method="GET", body=b"", content_type="text/html"):
     return status_headers, b"".join(chunks)
 
 
-def cookie_from(headers, name):
+def cookie_from(headers: list[tuple[str, str]], name: str) -> str:
     for key, value in headers:
         if key.lower() == "set-cookie" and value.startswith(name):
             return value.split(";", 1)[0]
@@ -105,13 +106,13 @@ def test_admin_login_and_diagnostics():
     )
     cookie = cookie_from(meta["headers"], "example_4_admin")
 
-    status_headers = {}
+    status_headers: dict[str, Any] = {}
 
-    def start_response(status, headers):
+    def start_response(status: str, headers: list[tuple[str, str]]):
         status_headers["status"] = status
         status_headers["headers"] = headers
 
-    env = dict(BASE_ENV)
+    env: dict[str, Any] = dict(BASE_ENV)
     env.update({
         "REQUEST_METHOD": "GET",
         "REQUEST_URI": "/admin/diagnostics",

@@ -1,0 +1,39 @@
+{
+  "include": [
+    "example_1",
+    "example_2",
+    "example_3",
+    "example_4",
+    "example_5",
+    "example_6",
+    "example_7",
+    "tests"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".git",
+    ".pytest_cache",
+    "data"
+  ],
+  "extraPaths": [
+    "../muscles/src",
+    "../muscles-asgi/src",
+    "../muscles-wsgi/src",
+    "../muscles-cli/src",
+    "../muscles-sql/src",
+    "../muscles-ai/src",
+    "../muscles-documents/src",
+    "../muscles-jsonrpc/src",
+    "../muscles-sse/src",
+    "../muscles-otel/src",
+    "../muscles-mcp/src",
+    "../muscles-data/src",
+    "../muscular-asgi/src",
+    "."
+  ],
+  "stubPath": "typings",
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic",
+  "reportMissingModuleSource": false,
+  "reportMissingTypeStubs": false
+}

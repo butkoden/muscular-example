@@ -6,8 +6,8 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 from muscles import ActionDispatcher
-from muscles_ai import init_package as init_ai_package
-from muscles_documents import init_package as init_documents_package
+from muscles_ai.package import init_package as init_ai_package
+from muscles_documents.package import init_package as init_documents_package
 from muscles_sql import FilterClause, QuerySpec, SqlConnectionConfig, SqlConnectionRegistry
 from muscles_sql import SqlRepository, UnitOfWork
 from sqlalchemy import Column, Integer, MetaData, String, Table

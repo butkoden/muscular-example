@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from typing import Any, cast
 
-from muscles import ApplicationMeta, Context, StreamEvent, StreamResult
+from muscles import ApplicationMeta, Context, StreamEvent, StreamResult, action
 from muscles.asgi import AsgiStrategy
 from muscles_jsonrpc import JsonRpcAdapter
 from muscles_mcp import McpStrategy
@@ -25,8 +26,8 @@ def development_approach() -> dict:
 class ExtensionProjectionApp(metaclass=ApplicationMeta):
     """One action-first app projected through several ecosystem packages."""
 
-    asgi_public = Context(AsgiStrategy, params={"profile": "public"})
-    mcp_public = Context(McpStrategy, transport=asgi_public, params={"mcp_profile": "public"})
+    asgi_public = Context(cast(Any, AsgiStrategy), params={"profile": "public"})
+    mcp_public = Context(cast(Any, McpStrategy), transport=asgi_public, params={"mcp_profile": "public"})
 
 
 app = ExtensionProjectionApp()
@@ -45,7 +46,8 @@ def _mcp_metadata(route: str, name: str) -> dict:
     }
 
 
-@app.action(
+@action(
+    app,
     name="learning.echo",
     description="Echo text and report the active transport",
     input_schema={
@@ -69,7 +71,8 @@ def echo(payload, context):
     return {"text": payload["text"], "transport": context.transport}
 
 
-@app.action(
+@action(
+    app,
     name="learning.progress",
     description="Stream progress events for long-running learning tasks",
     input_schema={
@@ -100,15 +103,15 @@ def _progress_events(steps: int) -> Iterator[StreamEvent]:
 
 def run_jsonrpc_example() -> dict:
     adapter = JsonRpcAdapter.from_application(app)
-    discovery = adapter.handle({"jsonrpc": "2.0", "id": 1, "method": "rpc.discover"})
-    echo_response = adapter.handle(
+    discovery = cast(dict[str, Any], adapter.handle({"jsonrpc": "2.0", "id": 1, "method": "rpc.discover"}))
+    echo_response = cast(dict[str, Any], adapter.handle(
         {
             "jsonrpc": "2.0",
             "id": 2,
             "method": "learning.echo",
             "params": {"text": "Hello JSON-RPC"},
         }
-    )
+    ))
     return {
         "approach": development_approach(),
         "methods": [method["name"] for method in discovery["result"]],
@@ -127,13 +130,13 @@ def run_sse_example() -> dict:
 
 
 def run_mcp_example() -> dict:
-    tools = app.mcp_public.execute(operation="list_tools", server="public")
-    call = app.mcp_public.execute(
+    tools = cast(list[dict[str, Any]], app.mcp_public.execute(operation="list_tools", server="public"))
+    call = cast(dict[str, Any], app.mcp_public.execute(
         operation="call_tool",
         server="public",
         name="learning.echo",
         arguments={"text": "Hello MCP"},
-    )
+    ))
     return {
         "approach": development_approach(),
         "tools": [tool["name"] for tool in tools],
@@ -143,13 +146,13 @@ def run_mcp_example() -> dict:
 
 def run_otel_example() -> dict:
     tracer = MusclesTracer(enabled=True)
-    result = instrument_action_dispatch(
+    result = cast(Any, instrument_action_dispatch(
         tracer,
         app,
         action_name="learning.echo",
         payload={"text": "Hello trace"},
         transport="jsonrpc",
-    )
+    ))
     return {
         "approach": development_approach(),
         "result": result.value,

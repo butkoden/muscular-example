@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import inspect
 import json
 from http.cookies import SimpleCookie
 from pathlib import Path
 
-from muscles import ApiKeyAuthSecurity, ApplicationMeta, BytesResponse, Configurator, Context, JsonResponse
-from muscles import NoContentResponse, cors
+from muscles import ApiKeyAuthSecurity, BytesResponse, Configurator, Context, JsonResponse
+from muscles import NoContentResponse
 from muscles import JsonRequestBody, JsonResponseBody, Model, Column, String, DateTime, ValueObjectField
-from muscles.asgi import asgi_app
+from muscles.core.cors import cors
+from muscles.asgi import MuscularAsgiApp, asgi_app
 from muscles.asgi.asgi import AsgiStrategy
 from muscles.asgi.restful import RestApi as AsgiRestApi
-from muscles.wsgi import wsgi_app
+from muscles.wsgi import MuscularWsgiApp, wsgi_app
 from muscles.wsgi.wsgi import WsgiStrategy
 from muscles.wsgi.restful import RestApi as WsgiRestApi
 
@@ -109,15 +111,15 @@ class Example4App:
         # RU: ASGI entrypoint аналогичен WSGI, но результат может быть awaitable.
         # EN: ASGI entrypoint mirrors WSGI, but the result may be awaitable.
         result = self.context.execute(scope=scope, receive=receive, send=send)
-        if hasattr(result, "__await__"):
+        if inspect.isawaitable(result):
             await result
 
 
-class Example4WsgiApp(Example4App, metaclass=ApplicationMeta):
+class Example4WsgiApp(Example4App, MuscularWsgiApp):
     pass
 
 
-class Example4AsgiApp(Example4App, metaclass=ApplicationMeta):
+class Example4AsgiApp(Example4App, MuscularAsgiApp):
     pass
 
 

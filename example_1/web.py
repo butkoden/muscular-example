@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from muscles import ApplicationMeta, Configurator, Context
 from muscles.wsgi import wsgi_app
 from muscles.wsgi.wsgi import BaseResponse, WsgiStrategy, routes
@@ -39,7 +41,7 @@ class Example1App(metaclass=ApplicationMeta):
     def __init__(self):
         # RU: Context связывает приложение со стратегией WSGI.
         # EN: Context connects the application to the WSGI strategy.
-        self.context = Context(WsgiStrategy, params={})
+        self.context = Context(cast(Any, WsgiStrategy), params={})
 
     def __call__(self, environ, start_response):
         # RU: WSGI передает environ/start_response, Muscles кладет их в Context.

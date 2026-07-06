@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 
 from muscles import ApplicationMeta, Configurator, Context
 from muscles.wsgi import wsgi_app
@@ -39,7 +40,7 @@ class Example6App(metaclass=ApplicationMeta):
     })
 
     def __init__(self):
-        self.context = Context(WsgiStrategy, params={})
+        self.context = Context(cast(Any, WsgiStrategy), params={})
 
     def __call__(self, environ, start_response):
         self.context.set_param("environ", environ)
