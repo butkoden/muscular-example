@@ -240,17 +240,19 @@ Each real backend adapter has its own small package so the core `example_7`
 does not grow vendor dependencies:
 
 - `example_data_elasticsearch_1`: `SearchIndexPort` through
-  `muscles-data-elasticsearch`;
+  [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
 - `example_data_opensearch_1`: `SearchIndexPort` through
-  `muscles-data-opensearch`;
+  [`muscles-data-opensearch`](https://github.com/butkoden/muscles-data-opensearch);
 - `example_data_redis_1`: `KeyValuePort`, `LockPort` and `StreamPort` through
-  `muscles-data-redis`;
+  [`muscles-data-redis`](https://github.com/butkoden/muscles-data-redis);
 - `example_data_sqlalchemy_1`: direct `SqlResourcePort` through
-  `muscles-data-sqlalchemy`;
-- `example_data_qdrant_1`: `VectorSearchPort` through `muscles-data-qdrant`;
+  [`muscles-data-sqlalchemy`](https://github.com/butkoden/muscles-data-sqlalchemy);
+- `example_data_qdrant_1`: `VectorSearchPort` through
+  [`muscles-data-qdrant`](https://github.com/butkoden/muscles-data-qdrant);
 - `example_data_mongodb_1`: `DocumentStorePort` through
-  `muscles-data-mongodb`;
-- `example_data_s3_1`: `ObjectStorePort` through `muscles-data-s3`.
+  [`muscles-data-mongodb`](https://github.com/butkoden/muscles-data-mongodb);
+- `example_data_s3_1`: `ObjectStorePort` through
+  [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
 
 Run them:
 

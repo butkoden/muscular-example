@@ -208,17 +208,19 @@ PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
 чтобы зависимость от конкретной базы не попадала в core example:
 
 - `example_data_elasticsearch_1`: `SearchIndexPort` через
-  `muscles-data-elasticsearch`;
+  [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
 - `example_data_opensearch_1`: `SearchIndexPort` через
-  `muscles-data-opensearch`;
+  [`muscles-data-opensearch`](https://github.com/butkoden/muscles-data-opensearch);
 - `example_data_redis_1`: `KeyValuePort`, `LockPort` и `StreamPort` через
-  `muscles-data-redis`;
+  [`muscles-data-redis`](https://github.com/butkoden/muscles-data-redis);
 - `example_data_sqlalchemy_1`: direct `SqlResourcePort` через
-  `muscles-data-sqlalchemy`;
-- `example_data_qdrant_1`: `VectorSearchPort` через `muscles-data-qdrant`;
+  [`muscles-data-sqlalchemy`](https://github.com/butkoden/muscles-data-sqlalchemy);
+- `example_data_qdrant_1`: `VectorSearchPort` через
+  [`muscles-data-qdrant`](https://github.com/butkoden/muscles-data-qdrant);
 - `example_data_mongodb_1`: `DocumentStorePort` через
-  `muscles-data-mongodb`;
-- `example_data_s3_1`: `ObjectStorePort` через `muscles-data-s3`.
+  [`muscles-data-mongodb`](https://github.com/butkoden/muscles-data-mongodb);
+- `example_data_s3_1`: `ObjectStorePort` через
+  [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
 
 Запуск:
 
