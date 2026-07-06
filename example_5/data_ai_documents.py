@@ -132,11 +132,6 @@ def run_documents_example() -> dict:
             },
         ).value
         sync_plan = dispatcher.execute("documents.sync.plan", {"source": "repo"}).value
-        sync_operations = [
-            operation
-            for plan in sync_plan.get("plans", [])
-            for operation in plan.get("operations", [])
-        ]
 
     return {
         "approach": development_approach(),
@@ -144,7 +139,7 @@ def run_documents_example() -> dict:
         "loaded_count": loaded["count"],
         "parsed_preview": parsed["text"][:32],
         "chunks_count": len(chunks["chunks"]),
-        "sync_operations": sync_operations,
+        "sync_operations": _sync_operations(sync_plan),
     }
 
 
@@ -193,6 +188,19 @@ def _source_names(payload: dict) -> list[str]:
     if isinstance(sources, dict):
         return sorted(sources)
     return sorted(str(source) for source in sources)
+
+
+def _sync_operations(payload: dict) -> list[dict]:
+    operations = payload.get("operations")
+    if isinstance(operations, list):
+        return operations
+    plans = payload.get("plans", [])
+    return [
+        operation
+        for plan in plans
+        for operation in plan.get("operations", [])
+        if isinstance(operation, dict)
+    ]
 
 
 def run_all() -> dict:

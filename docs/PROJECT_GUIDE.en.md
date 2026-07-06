@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`muscular-example` is now organized as a six-level learning staircase. Each
+`muscular-example` is now organized as a seven-level learning staircase. Each
 level adds a small set of Muscles features, so new readers do not have to start
 from the full application.
 
@@ -175,6 +175,38 @@ PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jso
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
 ```
 
+## Level 7: typed data ports
+
+Package: `example_7`
+
+Learn:
+
+- `muscles-data` as a named-resource runtime;
+- `DataRuntime.require_port(...)`;
+- `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` as a bridge to a named SQL registry;
+- Qdrant-backed `VectorSearchPort` through a fake client, without importing
+  `qdrant-client` in the web/use-case contract;
+- explicit capability mismatch errors;
+- safe diagnostics through `data.resource.inspect` and `data.doctor`;
+- in-memory/fake resources without external services.
+
+Key idea: a project may declare different backend resources, while framework
+code uses small typed ports instead of vendor SDKs. SQL connection lifecycle
+still belongs to `muscles-sql` or a compatible project registry.
+Vector search against Qdrant goes through `VectorSearchPort`; the direct Qdrant
+client remains an adapter detail or advanced native access in a project.
+
+The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-7`.
+
+Run:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+```
+
 ## Reading Order
 
 1. Start with `example_1/web.py`.
@@ -182,7 +214,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 3. Read `example_3/cli.py`.
 4. Move to `example_4/web.py` and `example_4/cli.py`.
 5. Read `example_5/web.py` and `example_5/data_ai_documents.py`.
-6. Finish with `example_6/web.py` and `example_6/protocols_observability.py`.
+6. Continue with `example_6/web.py` and `example_6/protocols_observability.py`.
+7. Finish with `example_7/web.py` and `example_7/data_ports.py`.
 
 The code intentionally uses Russian and English comments together: Russian
 explains the local learning context, English keeps framework terminology close
@@ -191,7 +224,7 @@ to documentation and OpenAPI wording.
 ## Checks
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:. python3 -m pytest -q
 ```
 
 Tests cover all levels, verify WSGI/ASGI parity for the full application, and

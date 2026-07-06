@@ -2,7 +2,7 @@
 
 ## Назначение
 
-`muscular-example` теперь устроен как учебная лестница из шести уровней.
+`muscular-example` теперь устроен как учебная лестница из семи уровней.
 Каждый следующий уровень добавляет новые возможности Muscles, не заставляя
 новичка сразу читать большое приложение.
 
@@ -173,6 +173,39 @@ PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jso
 PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
 ```
 
+## Уровень 7: typed data ports
+
+Пакет: `example_7`
+
+Что изучать:
+
+- `muscles-data` как runtime именованных data resources;
+- `DataRuntime.require_port(...)`;
+- `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` как bridge к named SQL registry;
+- Qdrant-backed `VectorSearchPort` через fake client, без импорта
+  `qdrant-client` в web/use-case contract;
+- явную ошибку capability mismatch;
+- безопасные diagnostics через `data.resource.inspect` и `data.doctor`;
+- in-memory/fake resources без внешних сервисов.
+
+Ключевая идея: проект может объявить разные backend resources, но код уровня
+фреймворка работает через маленькие typed ports, а не через vendor SDK.
+SQL-подключения при этом остаются ответственностью `muscles-sql` или
+совместимого project registry.
+Vector search к Qdrant идет через `VectorSearchPort`; прямой Qdrant client
+остается adapter detail или advanced native access в проекте.
+
+Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
+`Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-7`.
+
+Запуск:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+```
+
 ## Как читать код
 
 1. Начните с `example_1/web.py`.
@@ -180,7 +213,8 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 3. После этого посмотрите `example_3/cli.py`.
 4. Затем переходите к `example_4/web.py` и `example_4/cli.py`.
 5. После этого смотрите `example_5/web.py` и `example_5/data_ai_documents.py`.
-6. В конце откройте `example_6/web.py` и `example_6/protocols_observability.py`.
+6. Затем откройте `example_6/web.py` и `example_6/protocols_observability.py`.
+7. В конце посмотрите `example_7/web.py` и `example_7/data_ports.py`.
 
 Код специально покрыт русско-английскими комментариями: русская строка объясняет
 смысл, английская помогает читать терминологию из документации и OpenAPI.
@@ -188,7 +222,7 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-
 ## Проверки
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m pytest -q
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:. python3 -m pytest -q
 ```
 
 Тесты проверяют все уровни, отдельно подтверждают parity между WSGI и ASGI для
