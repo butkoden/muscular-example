@@ -1,0 +1,6 @@
+from typing import Any, Callable
+
+class MuscularWsgiApp: ...
+
+def wsgi_app(app: Any, context: str | Any | None = ...) -> Callable[..., Any]: ...
+

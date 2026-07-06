@@ -30,6 +30,7 @@ def test_bookings_remove_command(monkeypatch, tmp_path):
         "ends_at": "2026-06-01T10:30:00+03:00",
         "notes": "",
     })
+    assert booking is not None
 
     app = CliApp()
     assert app.run("bookings", "remove", str(booking["id"])) is True

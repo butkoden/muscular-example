@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Any, cast
 
 from muscles import ApplicationMeta, Context
 from muscles.cli.cli import CliStrategy, cli
@@ -9,7 +10,7 @@ from muscles.cli.cli import CliStrategy, cli
 class CliApp(metaclass=ApplicationMeta):
     # RU: CLI тоже использует Context, только со стратегией CliStrategy.
     # EN: CLI uses Context too, but with the CliStrategy.
-    context = Context(CliStrategy)
+    context = Context(cast(Any, CliStrategy))
 
     def run(self, *args):
         # RU: expand_slash_args дает два равнозначных стиля: "a b" и "a/b".

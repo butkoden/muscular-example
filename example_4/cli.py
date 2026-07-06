@@ -1,4 +1,5 @@
 import sys
+from typing import Any, cast
 
 from muscles import ApplicationMeta, Context
 from muscles.cli.cli import CliStrategy, cli
@@ -9,7 +10,7 @@ from .db import diagnostics, init_db, list_bookings, remove_booking, set_admin_p
 class CliApp(metaclass=ApplicationMeta):
     # RU: CLI-приложение использует тот же ApplicationMeta, что web-примеры.
     # EN: The CLI app uses the same ApplicationMeta as the web examples.
-    context = Context(CliStrategy)
+    context = Context(cast(Any, CliStrategy))
 
     def run(self, *args):
         # RU: shutup=False позволяет увидеть вывод команд во время обучения.

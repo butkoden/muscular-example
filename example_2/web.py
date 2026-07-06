@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from muscles import ApiKeyAuthSecurity, ApplicationMeta, Configurator, Context, JsonResponse
-from muscles import JsonResponseBody, cors
-from muscles.asgi import asgi_app
+import inspect
+
+from muscles import ApiKeyAuthSecurity, Configurator, Context, JsonResponse
+from muscles import JsonResponseBody
+from muscles.core.cors import cors
+from muscles.asgi import MuscularAsgiApp, asgi_app
 from muscles.asgi.asgi import AsgiStrategy
 from muscles.asgi.restful import RestApi as AsgiRestApi
-from muscles.wsgi import wsgi_app
+from muscles.wsgi import MuscularWsgiApp, wsgi_app
 from muscles.wsgi.wsgi import WsgiStrategy
 from muscles.wsgi.restful import RestApi as WsgiRestApi
 
@@ -171,15 +174,15 @@ class Example2App:
 
     async def asgi_call(self, scope, receive, send):
         result = self.context.execute(scope=scope, receive=receive, send=send)
-        if hasattr(result, "__await__"):
+        if inspect.isawaitable(result):
             await result
 
 
-class Example2WsgiApp(Example2App, metaclass=ApplicationMeta):
+class Example2WsgiApp(Example2App, MuscularWsgiApp):
     pass
 
 
-class Example2AsgiApp(Example2App, metaclass=ApplicationMeta):
+class Example2AsgiApp(Example2App, MuscularAsgiApp):
     pass
 
 
