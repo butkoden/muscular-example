@@ -12,6 +12,7 @@ from example_6.web import app as example_6_app
 from example_7.data_ports import (
     run_data_ports_example,
     run_elasticsearch_search_port_example,
+    run_mongodb_document_store_port_example,
     run_opensearch_search_port_example,
     run_qdrant_vector_port_example,
     run_redis_data_ports_example,
@@ -181,6 +182,22 @@ def test_example_7_shows_redis_key_value_lock_and_stream_ports():
     assert "redis-secret" not in repr(result)
 
 
+def test_example_7_shows_external_mongodb_document_store_port():
+    result = run_mongodb_document_store_port_example()
+
+    assert result["approach"]["contract"]
+    assert result["initialized_before"] is False
+    assert result["upsert"]["written"] == 1
+    assert result["found"] == {"name": "Denis", "role": "developer"}
+    assert result["listed_names"] == ["Denis", "Reader"]
+    assert result["deleted"]["deleted"] == 1
+    assert result["native_type"] == "FakeMongoClient"
+    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["details"]["backend"] == "mongodb"
+    assert result["doctor"]["status"] == "ok"
+    assert "mongo-secret" not in repr(result)
+
+
 def test_example_7_shows_qdrant_vector_port_bridge():
     result = run_qdrant_vector_port_example()
 
@@ -204,6 +221,7 @@ def test_example_7_keeps_example_1_wsgi_foundation():
     assert "elasticsearch_search_port" in response.json()["result"]
     assert "opensearch_search_port" in response.json()["result"]
     assert "redis_data_ports" in response.json()["result"]
+    assert "mongodb_document_store_port" in response.json()["result"]
     assert "sql_resource_port" in response.json()["result"]
     assert "sqlalchemy_resource_port" in response.json()["result"]
     assert "qdrant_vector_port" in response.json()["result"]

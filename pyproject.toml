@@ -19,4 +19,6 @@ pythonpath = [
   "../muscles-otel/src",
   "../muscles-mcp/src",
   ".",
+  "../muscles-data/src",
+  "../muscles-data-mongodb/src",
 ]
