@@ -22,6 +22,7 @@ def test_readme_describes_the_learning_levels():
     assert "Level 4: full application" in readme
     assert "Level 5: data, documents and AI extensions" in readme
     assert "Level 6: protocol projections and observability" in readme
+    assert "Level 7: typed data ports" in readme
 
 
 def test_example_1_is_a_minimal_wsgi_page():

@@ -9,6 +9,8 @@ from example_6.protocols_observability import (
     run_sse_example,
 )
 from example_6.web import app as example_6_app
+from example_7.data_ports import run_data_ports_example
+from example_7.web import app as example_7_app
 
 
 def test_example_5_shows_sql_documents_and_ai_packages():
@@ -74,3 +76,26 @@ def test_examples_5_and_6_keep_example_1_wsgi_foundation():
     assert example_6.status_code == 200
     assert example_6.json()["level"] == 6
     assert "jsonrpc" in example_6.json()["result"]
+
+
+def test_example_7_shows_typed_data_ports_and_diagnostics():
+    result = run_data_ports_example()
+
+    assert result["approach"]["contract"]
+    assert result["approach"]["use_case"]
+    assert result["approach"]["adapter"]
+    assert result["vector_hits"] == ["doc-1"]
+    assert result["search_hits"] == ["doc-1"]
+    assert result["object_keys"] == ["docs/readme.txt"]
+    assert result["cache_value"] == "cursor-1"
+    assert result["capability_mismatch"]["error"] == "DataCapabilityError"
+    assert result["doctor"]["status"] == "ok"
+    assert "native_client" not in repr(result["inspect"])
+
+
+def test_example_7_keeps_example_1_wsgi_foundation():
+    response = WsgiTestClient(example_7_app).get("/example-7")
+
+    assert response.status_code == 200
+    assert response.json()["level"] == 7
+    assert "data_ports" in response.json()["result"]
