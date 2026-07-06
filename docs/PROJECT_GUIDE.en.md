@@ -185,6 +185,8 @@ Learn:
 - `DataRuntime.require_port(...)`;
 - `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
 - `SqlResourcePort` as a bridge to a named SQL registry;
+- SQLAlchemy-backed `SqlResourcePort` as a direct SQLite data adapter, while
+  SQLAlchemy stays out of the web/use-case contract;
 - Qdrant-backed `VectorSearchPort` through a fake client, without importing
   `qdrant-client` in the web/use-case contract;
 - explicit capability mismatch errors;
@@ -193,7 +195,9 @@ Learn:
 
 Key idea: a project may declare different backend resources, while framework
 code uses small typed ports instead of vendor SDKs. SQL connection lifecycle
-still belongs to `muscles-sql` or a compatible project registry.
+still belongs to `muscles-sql` or a compatible project registry, but a project
+may also choose a direct `type: sqlalchemy` resource when it wants a SQLAlchemy
+session through the same `SqlResourcePort`.
 Vector search against Qdrant goes through `VectorSearchPort`; the direct Qdrant
 client remains an adapter detail or advanced native access in a project.
 
