@@ -1,6 +1,11 @@
 from muscles.wsgi.testing import TestClient as WsgiTestClient
 
-from example_5.data_ai_documents import run_ai_example, run_documents_example, run_sql_example
+from example_5.data_ai_documents import (
+    run_ai_example,
+    run_documents_example,
+    run_model_gateway_example,
+    run_sql_example,
+)
 from example_5.web import app as example_5_app
 from example_6.protocols_observability import (
     run_jsonrpc_example,
@@ -27,8 +32,9 @@ def test_example_5_shows_sql_documents_and_ai_packages():
     sql = run_sql_example()
     documents = run_documents_example()
     ai = run_ai_example()
+    gateway = run_model_gateway_example()
 
-    for payload in (sql, documents, ai):
+    for payload in (sql, documents, ai, gateway):
         assert payload["approach"]["contract"]
         assert payload["approach"]["use_case"]
         assert payload["approach"]["adapter"]
@@ -45,6 +51,8 @@ def test_example_5_shows_sql_documents_and_ai_packages():
     assert ai["answer"]
     assert "default" in ai["sources"]
     assert ai["doctor"]["status"] == "ok"
+    assert gateway["text"] == "text from local-text"
+    assert gateway["image_model"] == "local-image"
 
 
 def test_example_6_projects_actions_to_jsonrpc_sse_mcp_and_otel():

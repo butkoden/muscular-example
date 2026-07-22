@@ -165,7 +165,9 @@ Shows newer framework extension packages without adding web routing noise:
 
 - `muscles-sql` named connections, repository queries and Unit of Work;
 - `muscles-documents` local source loading, parsing, chunking and sync planning;
-- `muscles-ai` noop-provider actions through `ActionDispatcher`.
+- `muscles-ai` noop-provider actions through `ActionDispatcher`;
+- `muscles-ai.ModelGateway` with typed text/image requests and in-process
+  provider adapters, without requiring a model server.
 
 The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
 `Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
@@ -176,6 +178,12 @@ Run it:
 PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
 PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
 ```
+
+The model gateway example uses project-owned Python callables, so it runs
+without downloading model weights or contacting an external API. Real projects
+can replace the callables with an optional provider adapter such as OpenAI SDK,
+llama.cpp, Transformers, Diffusers or MLX while keeping the same gateway and
+typed request contract.
 
 Open:
 
