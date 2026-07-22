@@ -6,6 +6,13 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 from muscles import ActionDispatcher
+from muscles_ai import (
+    ImageGenerationResult,
+    ModelCapability,
+    ModelGateway,
+    PythonModelAdapter,
+    TextGenerationResult,
+)
 from muscles_ai.package import init_package as init_ai_package
 from muscles_documents.package import init_package as init_documents_package
 from muscles_sql import FilterClause, QuerySpec, SqlConnectionConfig, SqlConnectionRegistry
@@ -183,6 +190,48 @@ def run_ai_example() -> dict:
     }
 
 
+def run_model_gateway_example() -> dict:
+    """Show one in-process facade routing text and image capabilities."""
+
+    # RU: Один gateway принимает типизированные requests для разных моделей.
+    # EN: One gateway accepts typed requests for different model capabilities.
+    gateway = ModelGateway()
+    gateway.register_model(
+        "text.demo",
+        PythonModelAdapter(
+            {
+                ModelCapability.TEXT_GENERATE: lambda _request, model_id: TextGenerationResult(
+                    text=f"text from {model_id}"
+                )
+            }
+        ),
+        model_id="local-text",
+        capabilities=[ModelCapability.TEXT_GENERATE],
+        default=True,
+    )
+    gateway.register_model(
+        "image.demo",
+        PythonModelAdapter(
+            {
+                ModelCapability.IMAGE_GENERATE: lambda _request, model_id: ImageGenerationResult(
+                    artifacts=[], model=model_id
+                )
+            }
+        ),
+        model_id="local-image",
+        capabilities=[ModelCapability.IMAGE_GENERATE],
+    )
+
+    text = gateway.generate_text("hello")
+    image = gateway.generate_image("a simple icon", model="image.demo")
+    return {
+        "approach": development_approach(),
+        "text": text.text,
+        "image_model": image.model,
+        "models": [item["name"] for item in gateway.inspect()["models"]],
+    }
+
+
 def _source_names(payload: dict) -> list[str]:
     sources = payload.get("sources", [])
     if isinstance(sources, dict):
@@ -208,6 +257,7 @@ def run_all() -> dict:
         "sql": run_sql_example(),
         "documents": run_documents_example(),
         "ai": run_ai_example(),
+        "model_gateway": run_model_gateway_example(),
     }
 
 

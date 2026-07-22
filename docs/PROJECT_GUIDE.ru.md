@@ -133,10 +133,18 @@ PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli
 - `SqlRepository` и `UnitOfWork` для CRUD/query-потока;
 - `muscles-documents` как набор `documents.*` actions;
 - `muscles-ai` как набор `ai.*` actions с noop provider;
+- `muscles-ai.ModelGateway` как единый in-process facade для типизированных
+  text/image requests и разных provider adapters без model server;
 - вызов extension actions через общий `ActionDispatcher`.
 
 Ключевая идея: новые пакеты расширяют application model, но не требуют
 отдельной транспортной архитектуры.
+
+`run_model_gateway_example()` показывает минимальный контракт для разных
+моделей: проект регистрирует named adapters, а use-case вызывает
+`gateway.generate_text(...)` или `gateway.generate_image(...)`. В production
+callable можно заменить на optional adapter для OpenAI SDK, llama.cpp,
+Transformers, Diffusers или MLX без изменения use-case кода.
 
 Основа web-запуска повторяет `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)` и один `routes.init(...)` handler на `/example-5`.

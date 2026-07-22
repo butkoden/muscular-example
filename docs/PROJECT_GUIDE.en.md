@@ -135,10 +135,18 @@ Learn:
 - `SqlRepository` and `UnitOfWork` for CRUD/query flow;
 - `muscles-documents` as `documents.*` actions;
 - `muscles-ai` as `ai.*` actions with the noop provider;
+- `muscles-ai.ModelGateway` as one in-process facade for typed text/image
+  requests and different provider adapters without a model server;
 - extension action calls through the shared `ActionDispatcher`.
 
 Key idea: newer packages extend the application model without forcing a separate
 transport architecture.
+
+`run_model_gateway_example()` shows the smallest multi-model contract: the
+project registers named adapters, while the use case calls
+`gateway.generate_text(...)` or `gateway.generate_image(...)`. In production,
+the callable can be replaced with an optional OpenAI SDK, llama.cpp,
+Transformers, Diffusers or MLX adapter without changing use-case code.
 
 The web foundation mirrors `example_1`: `ApplicationMeta`, `Configurator`,
 `Context(WsgiStrategy)`, and one `routes.init(...)` handler at `/example-5`.
