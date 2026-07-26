@@ -20,7 +20,7 @@ def run_example() -> dict:
     catalog.register(QdrantVectorFactory(client_factory=lambda _config: client, models_provider=lambda: FakeQdrantModels))
     runtime = DataRuntime(
         config=DataConfig.from_raw(
-            {"data": {"resources": {"vector.docs": {"type": "qdrant", "url": "https://qdrant.example", "api_key": "qdrant-secret", "collection": "docs", "timeout": 1}}}}
+            {"data": {"resources": {"vector.docs": {"type": "qdrant", "url_env": "QDRANT_URL", "api_key": "qdrant-secret", "collection": "docs", "vector_size": 2, "distance": "cosine", "timeout": 1}}}}
         ),
         catalog=catalog,
     )

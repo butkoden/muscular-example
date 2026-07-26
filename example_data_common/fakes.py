@@ -118,10 +118,16 @@ class FakeRedisClient:
             messages = [
                 (message_id, fields)
                 for message_id, fields in self.streams.get(name, [])
-                if cursor in {"0", "0-0"} or message_id > cursor
+                if cursor in {"0", "0-0", ">"} or message_id > cursor
             ]
             output.append((name, messages[:count]))
         return output
+
+    def xgroup_create(self, _name: str, _groupname: str, id: str = "0-0", mkstream: bool = False):
+        del id, mkstream
+
+    def xreadgroup(self, _groupname: str, _consumername: str, streams: dict[str, str], count: int | None = None, block: int | None = None):
+        return self.xread(streams, count=count, block=block)
 
     def xack(self, name: str, _groupname: str, *ids: str) -> int:
         known = {message_id for message_id, _fields in self.streams.get(name, [])}
@@ -276,6 +282,19 @@ class FakeQdrantClient:
 
 
 class FakeQdrantModels:
+    class Distance:
+        COSINE = "Cosine"
+        DOT = "Dot"
+        EUCLID = "Euclid"
+
+    class PayloadSchemaType:
+        KEYWORD = "keyword"
+
+    class VectorParams:
+        def __init__(self, *, size: int, distance) -> None:
+            self.size = size
+            self.distance = distance
+
     class MatchValue:
         def __init__(self, value) -> None:
             self.value = value

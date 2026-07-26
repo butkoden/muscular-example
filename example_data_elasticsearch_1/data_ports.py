@@ -21,7 +21,7 @@ def run_example() -> dict:
     catalog.register(ElasticsearchSearchFactory(client_factory=lambda _config: client))
     runtime = DataRuntime(
         config=DataConfig.from_raw(
-            {"data": {"resources": {"search.docs": {"type": "elasticsearch", "url": "https://elastic.example", "api_key": "elastic-secret", "index": "docs", "timeout": 1, "native_client": True}}}}
+            {"data": {"resources": {"search.docs": {"type": "elasticsearch", "url_env": "ELASTICSEARCH_URL", "api_key": "elastic-secret", "index": "docs", "timeout": 1, "native_client": True}}}}
         ),
         catalog=catalog,
     )

@@ -21,7 +21,7 @@ def run_example() -> dict:
     catalog.register(RedisDataFactory(client_factory=lambda _config: client))
     runtime = DataRuntime(
         config=DataConfig.from_raw(
-            {"data": {"resources": {"cache.default": {"type": "redis", "url": "redis://:redis-secret@localhost:6379/0", "namespace": "demo", "stream_group": "workers", "timeout": 1, "native_client": True}}}}
+            {"data": {"resources": {"cache.default": {"type": "redis", "url_env": "REDIS_URL", "namespace": "demo", "stream_group": "workers", "consumer": "example-worker", "timeout": 1, "native_client": True}}}}
         ),
         catalog=catalog,
     )

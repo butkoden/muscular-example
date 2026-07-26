@@ -148,7 +148,7 @@ def test_example_data_elasticsearch_1_shows_elasticsearch_search_port_adapter():
     assert result["upsert"]["written"] == 1
     assert result["deleted"]["deleted"] == 1
     assert result["native_type"] == "FakeElasticsearchClient"
-    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["options"]["url_env"] == "***"
     assert result["inspect"]["options"]["api_key"] == "***"
     assert result["doctor"]["status"] == "ok"
     assert "elastic-secret" not in repr(result)
@@ -182,11 +182,16 @@ def test_example_data_redis_1_shows_redis_key_value_lock_and_stream_ports():
     assert result["lock_release"]["deleted"] == 1
     assert result["stream_publish"]["written"] == 1
     assert result["stream_messages"] == [
-        {"stream": "events", "id": "1-0", "fields": {"kind": "cursor.updated"}}
+        {
+            "stream": "events",
+            "id": "1-0",
+            "fields": {"kind": "cursor.updated"},
+            "envelope": {"version": 1, "schema": "muscles.data.message.v1"},
+        }
     ]
     assert result["stream_ack"]["matched"] == 1
     assert result["native_type"] == "FakeRedisClient"
-    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["options"]["url_env"] == "***"
     assert result["doctor"]["status"] == "ok"
     assert "redis-secret" not in repr(result)
 
@@ -233,7 +238,7 @@ def test_example_data_qdrant_1_shows_qdrant_vector_port_bridge():
     assert result["deleted_by_id"]["deleted"] == 1
     assert result["deleted_by_filter"]["status"] == "ok"
     assert result["doctor"]["status"] == "ok"
-    assert result["inspect"]["options"]["url"] == "***"
+    assert result["inspect"]["options"]["url_env"] == "***"
     assert result["inspect"]["options"]["api_key"] == "***"
     assert "qdrant-secret" not in repr(result)
 
