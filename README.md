@@ -1,21 +1,130 @@
 # muscular-example
 
-Public example project based on `butko-info-site` that demonstrates how to build
-real Muscular applications with:
+Layered learning examples for the `muscles` framework.
 
-- website pages;
-- REST API with Swagger/OpenAPI;
-- CLI commands with nested routing;
-- SQLite persistence;
-- simple admin/auth flow.
+The repository is organized as a staircase. Start with `example_1`, then move
+one level up when the previous level feels clear.
 
-This repository is meant to stay in sync with the framework evolution.
+## Development Approach
 
-## Quick Start
+All examples follow the same small teaching structure:
+
+- contract: schemas, routes, actions or `run_*_example()` outputs are explicit;
+- use case: the useful scenario is kept in small functions/classes;
+- adapter: WSGI, ASGI, CLI, SQL, AI, Documents, JSON-RPC, SSE, MCP and OTEL stay at the edges;
+- test: each level has a compact test contract that proves the example remains executable.
+
+This keeps the examples comparable even when they demonstrate different
+libraries.
+
+## Running Examples Correctly
+
+The examples export application callables. Do not treat the repository as a
+place to write custom server loops:
+
+- WSGI examples expose `app` or `wsgi_application` and should be run by a WSGI server such as `gunicorn`;
+- ASGI examples expose `asgi_application` and should be run by an ASGI server such as `uvicorn`;
+- CLI examples are the exception and should be run as Python modules.
+
+Install the runner dependencies from `requirements.txt`, then use the commands
+below for each level.
+
+## Learning Levels
+
+### Level 1: minimal web route
+
+Package: `example_1`
+
+Shows the smallest useful WSGI application:
+
+- `ApplicationMeta`;
+- `Configurator`;
+- `Context(WsgiStrategy)`;
+- one `routes.init(...)` handler.
+
+Run it:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli init-db
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.server
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:. python3 -m gunicorn example_1.web:app --bind 0.0.0.0:8080
+```
+
+Open:
+
+- http://localhost:8080/example-1
+
+### Level 2: REST API and guards
+
+Package: `example_2`
+
+Adds a small REST API without extra project architecture:
+
+- page route through `routes.init(...)`;
+- public endpoint through `api.init(...)`;
+- protected API group through `api.group(...)`;
+- public login inside a protected group through `auth=False`;
+- guard through `api.guard(...)`;
+- CORS middleware through `api.use(cors(...))`;
+- OpenAPI schema.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m gunicorn example_2.web:wsgi_application --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:. python3 -m uvicorn example_2.web:asgi_application --host 0.0.0.0 --port 8080
+```
+
+Try it:
+
+```bash
+curl http://localhost:8080/example-2
+curl http://localhost:8080/api/example-2/v1/messages
+curl -X POST http://localhost:8080/api/example-2/v1/protected/login
+curl http://localhost:8080/api/example-2/v1/protected/status
+curl -H 'X-Api-Key: example-2-token' http://localhost:8080/api/example-2/v1/protected/status
+```
+
+### Level 3: CLI commands
+
+Package: `example_3`
+
+Shows the CLI runtime separately from web code:
+
+- `Context(CliStrategy)`;
+- root command group;
+- nested command group;
+- slash-style command aliases.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/hello Student
+PYTHONPATH=../muscles/src:../muscles-cli/src:. python3 -m example_3.cli example-3/tasks list
+```
+
+### Level 4: full application
+
+Package: `example_4`
+
+Combines the framework features in one realistic app:
+
+- pages, templates and static files;
+- REST API with controller classes and action decorators;
+- OpenAPI/Swagger;
+- WSGI and ASGI entrypoints with the same contracts;
+- API guards and endpoint-level auth override;
+- CORS middleware;
+- `JsonResponse`, `BytesResponse`, `NoContentResponse`;
+- one API path with different route keys per HTTP method;
+- SQLite persistence;
+- admin login and diagnostics;
+- CLI commands for operations.
+
+Run the web app:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli init-db
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m gunicorn example_4.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m uvicorn example_4.web:asgi_application --host 0.0.0.0 --port 8080
 ```
 
 Open:
@@ -27,32 +136,158 @@ Open:
 
 Default admin password: `admin`
 
+Try protected API features:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/protected/login
+curl http://localhost:8080/api/v1/protected/diagnostics
+curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/diagnostics
+curl -X DELETE -H 'X-Api-Key: demo-framework-token' -i http://localhost:8080/api/v1/protected/cache
+curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/asset
+curl -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/method-key
+curl -X POST -H 'X-Api-Key: demo-framework-token' http://localhost:8080/api/v1/protected/method-key
+```
+
+Run level 4 CLI commands:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli help
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings remove 1
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:. python3 -m example_4.cli bookings/remove 1
+```
+
+### Level 5: data, documents and AI extensions
+
+Package: `example_5`
+
+Shows newer framework extension packages without adding web routing noise:
+
+- `muscles-sql` named connections, repository queries and Unit of Work;
+- `muscles-documents` local source loading, parsing, chunking and sync planning;
+- `muscles-ai` noop-provider actions through `ActionDispatcher`;
+- `muscles-ai.ModelGateway` with typed text/image requests and in-process
+  provider adapters, without requiring a model server.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m gunicorn example_5.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-sql/src:../muscles-documents/src:../muscles-ai/src:. python3 -m example_5.data_ai_documents
+```
+
+The model gateway example uses project-owned Python callables, so it runs
+without downloading model weights or contacting an external API. Real projects
+can replace the callables with an optional provider adapter such as OpenAI SDK,
+llama.cpp, Transformers, Diffusers or MLX while keeping the same gateway and
+typed request contract.
+
+Open:
+
+- http://localhost:8080/example-5
+
+### Level 6: protocol projections and observability
+
+Package: `example_6`
+
+Shows one action-first Muscles app projected through newer transport and
+instrumentation libraries:
+
+- `muscles-jsonrpc` discovers and calls actions as JSON-RPC 2.0 methods;
+- `muscles-sse` streams progress/result events from `StreamResult`;
+- `muscles-mcp` exposes the same action as MCP tools;
+- `muscles-otel` records action lifecycle spans around validation and handler execution.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m gunicorn example_6.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:. python3 -m example_6.protocols_observability
+```
+
+Open:
+
+- http://localhost:8080/example-6
+
+### Level 7: typed data ports
+
+Package: `example_7`
+
+Shows `muscles-data` as a named-resource runtime with typed ports:
+
+- `DataRuntime.require_port(...)`;
+- `VectorSearchPort`, `SearchIndexPort`, `KeyValuePort`, `ObjectStorePort`;
+- `SqlResourcePort` as a bridge to a named SQL registry;
+- capability mismatch as an explicit error;
+- safe `data.resource.inspect` and `data.doctor` diagnostics;
+- in-memory resources without external services or vendor SDKs.
+
+The web foundation intentionally mirrors `example_1`: `ApplicationMeta`,
+`Configurator`, `Context(WsgiStrategy)` and one `routes.init(...)` handler.
+
+Run it:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-data/src:. python3 -m gunicorn example_7.web:app --bind 0.0.0.0:8080
+PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
+```
+
+Open:
+
+- http://localhost:8080/example-7
+
+### Adapter-specific data examples
+
+Each real backend adapter has its own small package so the core `example_7`
+does not grow vendor dependencies:
+
+- `example_data_elasticsearch_1`: `SearchIndexPort` through
+  [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
+- `example_data_opensearch_1`: `SearchIndexPort` through
+  [`muscles-data-opensearch`](https://github.com/butkoden/muscles-data-opensearch);
+- `example_data_redis_1`: `KeyValuePort`, `LockPort` and `StreamPort` through
+  [`muscles-data-redis`](https://github.com/butkoden/muscles-data-redis);
+- `example_data_sqlalchemy_1`: direct `SqlResourcePort` through
+  [`muscles-data-sqlalchemy`](https://github.com/butkoden/muscles-data-sqlalchemy);
+- `example_data_qdrant_1`: `VectorSearchPort` through
+  [`muscles-data-qdrant`](https://github.com/butkoden/muscles-data-qdrant);
+- `example_data_mongodb_1`: `DocumentStorePort` through
+  [`muscles-data-mongodb`](https://github.com/butkoden/muscles-data-mongodb);
+- `example_data_s3_1`: `ObjectStorePort` through
+  [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
+
+Run them:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-elasticsearch/src:. python3 -m example_data_elasticsearch_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-opensearch/src:. python3 -m example_data_opensearch_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-redis/src:. python3 -m example_data_redis_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-sqlalchemy/src:. python3 -m example_data_sqlalchemy_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-qdrant/src:. python3 -m example_data_qdrant_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_data_mongodb_1.data_ports
+PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-s3/src:. python3 -m example_data_s3_1.data_ports
+```
+
+## Tests
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-wsgi/src:../muscles-cli/src:../muscles-sql/src:../muscles-ai/src:../muscles-documents/src:../muscles-jsonrpc/src:../muscles-sse/src:../muscles-otel/src:../muscles-mcp/src:../muscles-data/src:../muscles-data-elasticsearch/src:../muscles-data-mongodb/src:../muscles-data-opensearch/src:../muscles-data-qdrant/src:../muscles-data-redis/src:../muscles-data-s3/src:../muscles-data-sqlalchemy/src:. python3 -m pytest -q
+```
+
+The test suite checks every level, verifies that level 4 behaves the same
+through WSGI and ASGI test clients, and keeps the new ecosystem extension
+examples executable.
+
 ## Docker
 
 ```bash
 docker compose up --build
-```
-
-If Docker Hub returns `429 Too Many Requests`, either authenticate:
-
-```bash
-docker login
-docker compose up --build
-```
-
-or override image source:
-
-```bash
-PYTHON_IMAGE=registry.example.com/python:3.12-slim docker compose up --build
-```
-
-## CLI examples
-
-```bash
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli help
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings remove 1
-PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butko_info.cli bookings/remove 1
 ```
 
 ## Project Guides
@@ -62,10 +297,7 @@ PYTHONPATH=../muscles/src:../muscles-wsgi/src:../muscles-cli/src python3 -m butk
 
 ## Sync Policy
 
-When `muscles`, `muscles-wsgi`, `muscles-asgi`, or `muscles-cli` behavior changes,
-this example should be updated in the same wave and verified by tests.
-
-## ValueObject example
-
-The project includes a pilot domain value object (`EmailAddress`) wired through
-`ValueObjectField` in `Booking.email` model field.
+When `muscles`, `muscles-wsgi`, `muscles-asgi`, `muscles-cli`,
+`muscles-sql`, `muscles-ai`, `muscles-documents`, `muscles-jsonrpc`,
+`muscles-sse`, `muscles-otel`, `muscles-mcp`, or `muscles-data` behavior
+changes, this example should be updated in the same wave and verified by tests.

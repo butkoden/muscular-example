@@ -1,0 +1,162 @@
+from __future__ import annotations
+
+from collections.abc import Mapping
+import json
+from types import SimpleNamespace
+from typing import Any, cast
+
+from muscles import ActionDispatcher
+from muscles_data.catalog import DataAdapterCatalog
+from muscles_data.config import DataConfig
+from muscles_data.errors import DataCapabilityError
+from muscles_data.package import init_package
+from muscles_data.ports import (
+    KeyValuePort,
+    ObjectStorePort,
+    SearchIndexPort,
+    SqlResourcePort,
+    VectorSearchPort,
+)
+from muscles_data.runtime import DataRuntime
+
+
+DEVELOPMENT_APPROACH = {
+    "contract": "The example uses named resources and typed ports instead of backend clients.",
+    "use_case": "Data operations live in run_data_ports_example(), away from the web adapter.",
+    "adapter": "The WSGI route only renders the use-case result; data access goes through muscles-data.",
+}
+
+
+def development_approach() -> dict:
+    return dict(DEVELOPMENT_APPROACH)
+
+
+def run_data_ports_example() -> dict:
+    """Show core typed ports, capability mismatch and safe diagnostics."""
+
+    app = SimpleNamespace()
+    runtime = init_package(
+        app,
+        {
+            "data": {
+                "resources": {
+                    "vector.docs": {"type": "memory_vector"},
+                    "search.docs": {"type": "memory_search"},
+                    "cache.default": {"type": "memory_kv", "token": "local-demo-token"},
+                    "objects.docs": {"type": "memory_object"},
+                }
+            }
+        },
+    )
+
+    vector = cast(VectorSearchPort, runtime.require_port("vector.docs", VectorSearchPort))
+    vector.upsert_vectors([
+        {"id": "doc-1", "vector": [1.0, 0.0], "payload": {"title": "Data ports"}},
+        {"id": "doc-2", "vector": [0.0, 1.0], "payload": {"title": "Other"}},
+    ])
+    vector_hits = [hit.id for hit in vector.search_vectors([0.9, 0.1], limit=1)]
+
+    search = cast(SearchIndexPort, runtime.require_port("search.docs", SearchIndexPort))
+    search.upsert_documents([
+        {"id": "doc-1", "text": "Muscles data ports keep framework code backend-neutral."},
+        {"id": "doc-2", "text": "Other note."},
+    ])
+    search_hits = [hit.id for hit in search.search_text("backend-neutral")]
+
+    cache = cast(KeyValuePort, runtime.require_port("cache.default", KeyValuePort))
+    cache.set("cursor", b"cursor-1")
+
+    objects = cast(ObjectStorePort, runtime.require_port("objects.docs", ObjectStorePort))
+    objects.put_object("docs/readme.txt", b"hello", content_type="text/plain")
+
+    try:
+        runtime.require_port("cache.default", VectorSearchPort)
+    except DataCapabilityError as exc:
+        capability_mismatch = {"error": exc.__class__.__name__, "message": str(exc)}
+    else:  # pragma: no cover
+        capability_mismatch = {"error": None, "message": "unexpected success"}
+
+    dispatcher = ActionDispatcher(app)
+    inspect = dispatcher.execute("data.resource.inspect", {"name": "cache.default"}).value
+    doctor = dispatcher.execute("data.doctor", {}).value
+    cache_value = cache.get("cursor")
+    if cache_value is None:  # pragma: no cover
+        raise RuntimeError("cache cursor was not written")
+
+    return {
+        "approach": development_approach(),
+        "vector_hits": vector_hits,
+        "search_hits": search_hits,
+        "cache_value": cache_value.decode("utf-8"),
+        "object_keys": [item.key for item in objects.list_objects(prefix="docs/")],
+        "capability_mismatch": capability_mismatch,
+        "inspect": inspect,
+        "doctor": doctor,
+    }
+
+
+class FakeSqlRegistry:
+    def session(self, name: str = "default"):
+        return f"session:{name}"
+
+    def session_factory(self, name: str = "default"):
+        return f"factory:{name}"
+
+    def inspect(self, name: str = "default"):
+        return {
+            "status": "ok",
+            "connection": {
+                "name": name,
+                "url": "sqlite://secret@/:memory:",
+                "safe_url": "sqlite:///:memory:",
+                "role": "read_write",
+            },
+        }
+
+
+def run_sql_resource_port_example() -> dict:
+    """Show SQL as a core data resource bridge without importing SQLAlchemy."""
+
+    registry = FakeSqlRegistry()
+    runtime = DataRuntime(
+        config=DataConfig.from_raw(
+            {
+                "data": {
+                    "resources": {
+                        "sql.main": {
+                            "type": "sql",
+                            "connection": "main",
+                            "role": "read_write",
+                        }
+                    }
+                }
+            }
+        ),
+        catalog=DataAdapterCatalog.with_defaults(sql_registry_provider=lambda: registry),
+    )
+
+    sql = cast(SqlResourcePort, runtime.require_port("sql.main", SqlResourcePort))
+    inspect = cast(Mapping[str, Any], sql.inspect())
+    return {
+        "approach": development_approach(),
+        "connection_name": sql.connection_name(),
+        "session": sql.session(),
+        "session_factory": sql.session_factory(),
+        "inspect": inspect,
+        "doctor": sql.doctor(),
+    }
+
+
+def run_all() -> dict:
+    return {
+        "data_ports": run_data_ports_example(),
+        "sql_resource_port": run_sql_resource_port_example(),
+    }
+
+
+def main() -> None:
+    print(json.dumps(run_all(), ensure_ascii=False, indent=2, default=str))
+
+
+if __name__ == "__main__":
+    main()

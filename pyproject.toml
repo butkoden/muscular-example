@@ -1,8 +1,39 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "butko-info-site"
+name = "muscular-example"
 version = "0.1.0"
-description = "Demo personal site built on the Muscles framework"
+description = "Layered learning examples for the Muscles framework"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+
+[tool.setuptools]
+py-modules = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [
+  "../muscles/src",
+  "../muscles-asgi/src",
+  "../muscles-wsgi/src",
+  "../muscles-cli/src",
+  "../muscles-sql/src",
+  "../muscles-ai/src",
+  "../muscles-documents/src",
+  "../muscles-jsonrpc/src",
+  "../muscles-sse/src",
+  "../muscles-otel/src",
+  "../muscles-mcp/src",
+  ".",
+  "../muscles-data/src",
+  "../muscles-data-elasticsearch/src",
+  "../muscles-data-mongodb/src",
+  "../muscles-data-opensearch/src",
+  "../muscles-data-qdrant/src",
+  "../muscles-data-redis/src",
+  "../muscles-data-s3/src",
+  "../muscles-data-sqlalchemy/src",
+]
