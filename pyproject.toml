@@ -1,8 +1,17 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "muscular-example"
 version = "0.1.0"
 description = "Layered learning examples for the Muscles framework"
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
+
+[tool.setuptools]
+py-modules = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
