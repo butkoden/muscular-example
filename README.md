@@ -242,6 +242,54 @@ Open:
 
 - http://localhost:8080/example-7
 
+### Level 8: one action, three projections
+
+Package: `example_8`
+
+This level demonstrates the central Muscles rule: one application-scoped action
+and one use case can be exposed through several protocol projections:
+
+- `bookings.create` is declared once with one input/output contract;
+- HTTP uses `muscles.asgi.ActionAsgiAdapter` at `POST /actions/bookings.create`;
+- CLI uses the shared `muscles action run` projection;
+- MCP uses `McpAdapter` and the same `bookings.create` action;
+- `inspect_application(app)` shows the action, schema, transports, and MCP metadata.
+
+The handler does not branch on transport. It delegates to `BookingUseCase`, so
+HTTP, CLI, and MCP exercise the same business path.
+
+Run the HTTP projection:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-mcp/src:. python3 -m uvicorn example_8.booking_app:http_application --host 0.0.0.0 --port 8080
+curl -X POST http://localhost:8080/actions/bookings.create \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"Discovery call","guest_count":2}'
+```
+
+Run the CLI projection:
+
+```bash
+PYTHONPATH=../muscles/src:../muscles-cli/src:../muscles-mcp/src:. muscles action run \
+  bookings.create --app example_8.booking_app:app \
+  --payload-json '{"title":"Discovery call","guest_count":2}' --json
+```
+
+Call the MCP projection:
+
+```python
+from muscles_mcp import McpAdapter
+from example_8.booking_app import app
+
+response = McpAdapter.from_application(app, context="mcp_public").call_tool(
+    "bookings.create",
+    {"title": "Discovery call", "guest_count": 2},
+)
+```
+
+The focused contract test proves that all three calls reach the same use case:
+`tests/test_booking_example.py`.
+
 ### Adapter-specific data examples
 
 Each real backend adapter has its own small package so the core `example_7`

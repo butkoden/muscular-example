@@ -182,7 +182,12 @@ def test_example_data_redis_1_shows_redis_key_value_lock_and_stream_ports():
     assert result["lock_release"]["deleted"] == 1
     assert result["stream_publish"]["written"] == 1
     assert result["stream_messages"] == [
-        {"stream": "events", "id": "1-0", "fields": {"kind": "cursor.updated"}}
+        {
+            "stream": "events",
+            "id": "1-0",
+            "fields": {"kind": "cursor.updated"},
+            "envelope": {"version": 1, "schema": "muscles.data.message.v1"},
+        }
     ]
     assert result["stream_ack"]["matched"] == 1
     assert result["native_type"] == "FakeRedisClient"
