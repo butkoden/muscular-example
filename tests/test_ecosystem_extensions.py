@@ -19,13 +19,6 @@ from example_7.data_ports import (
     run_sql_resource_port_example,
 )
 from example_7.web import app as example_7_app
-from example_data_elasticsearch_1.data_ports import run_example as run_elasticsearch_example
-from example_data_mongodb_1.data_ports import run_example as run_mongodb_example
-from example_data_opensearch_1.data_ports import run_example as run_opensearch_example
-from example_data_qdrant_1.data_ports import run_example as run_qdrant_example
-from example_data_redis_1.data_ports import run_example as run_redis_example
-from example_data_s3_1.data_ports import run_example as run_s3_example
-from example_data_sqlalchemy_1.data_ports import run_example as run_sqlalchemy_example
 
 
 def test_example_5_shows_sql_documents_and_ai_packages():
@@ -122,125 +115,6 @@ def test_example_7_shows_sql_resource_port_bridge():
     assert result["inspect"]["connection"]["safe_url"] == "sqlite:///:memory:"
     assert result["doctor"]["status"] == "ok"
     assert "secret" not in repr(result)
-
-
-def test_example_data_sqlalchemy_1_shows_sqlalchemy_resource_port_adapter():
-    result = run_sqlalchemy_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["connection_name"] == "local_sqlite"
-    assert result["rows"] == ["SQLAlchemy port"]
-    assert result["native_keys"] == ["engine", "session_factory"]
-    assert result["inspect"]["options"]["url"] == "***"
-    assert result["inspect"]["details"]["backend"] == "sqlalchemy"
-    assert result["doctor"]["status"] == "ok"
-    assert "sqlite:///:memory:" not in repr(result)
-
-
-def test_example_data_elasticsearch_1_shows_elasticsearch_search_port_adapter():
-    result = run_elasticsearch_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["hits"] == ["doc-1"]
-    assert result["highlights"]["text"] == ["<em>Muscles</em> data ports"]
-    assert result["upsert"]["written"] == 1
-    assert result["deleted"]["deleted"] == 1
-    assert result["native_type"] == "FakeElasticsearchClient"
-    assert result["inspect"]["options"]["url_env"] == "***"
-    assert result["inspect"]["options"]["api_key"] == "***"
-    assert result["doctor"]["status"] == "ok"
-    assert "elastic-secret" not in repr(result)
-
-
-def test_example_data_opensearch_1_shows_opensearch_search_port_adapter():
-    result = run_opensearch_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["hits"] == ["doc-1"]
-    assert result["highlights"]["text"] == ["<em>Muscles</em> data ports"]
-    assert result["upsert"]["written"] == 1
-    assert result["deleted"]["deleted"] == 1
-    assert result["native_type"] == "FakeOpenSearchClient"
-    assert result["inspect"]["options"]["url"] == "***"
-    assert result["inspect"]["options"]["password"] == "***"
-    assert result["doctor"]["status"] == "ok"
-    assert "open-secret" not in repr(result)
-
-
-def test_example_data_redis_1_shows_redis_key_value_lock_and_stream_ports():
-    result = run_redis_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["cache_write"]["written"] == 1
-    assert result["cache_value"] == "page-2"
-    assert result["cache_exists"] is True
-    assert result["lock_acquired"] is True
-    assert result["lock_release"]["deleted"] == 1
-    assert result["stream_publish"]["written"] == 1
-    assert result["stream_messages"] == [
-        {
-            "stream": "events",
-            "id": "1-0",
-            "fields": {"kind": "cursor.updated"},
-            "envelope": {"version": 1, "schema": "muscles.data.message.v1"},
-        }
-    ]
-    assert result["stream_ack"]["matched"] == 1
-    assert result["native_type"] == "FakeRedisClient"
-    assert result["inspect"]["options"]["url_env"] == "***"
-    assert result["doctor"]["status"] == "ok"
-    assert "redis-secret" not in repr(result)
-
-
-def test_example_data_mongodb_1_shows_external_mongodb_document_store_port():
-    result = run_mongodb_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["upsert"]["written"] == 1
-    assert result["found"] == {"name": "Denis", "role": "developer"}
-    assert result["listed_names"] == ["Denis", "Reader"]
-    assert result["deleted"]["deleted"] == 1
-    assert result["native_type"] == "FakeMongoClient"
-    assert result["inspect"]["options"]["url"] == "***"
-    assert result["inspect"]["details"]["backend"] == "mongodb"
-    assert result["doctor"]["status"] == "ok"
-    assert "mongo-secret" not in repr(result)
-
-
-def test_example_data_s3_1_shows_external_s3_object_store_port():
-    result = run_s3_example()
-
-    assert result["approach"]["contract"]
-    assert result["initialized_before"] is False
-    assert result["put"]["written"] == 1
-    assert result["blob"] == {"key": "docs/readme.txt", "content": "hello", "content_type": "text/plain"}
-    assert result["listed_keys"] == ["docs/guide.txt", "docs/readme.txt"]
-    assert result["stored_keys"] == ["raw/docs/readme.txt"]
-    assert result["deleted"]["deleted"] == 1
-    assert result["native_type"] == "FakeS3Client"
-    assert result["inspect"]["options"]["endpoint_url"] == "***"
-    assert result["inspect"]["details"]["backend"] == "s3"
-    assert result["doctor"]["status"] == "ok"
-    assert "s3-secret" not in repr(result)
-
-
-def test_example_data_qdrant_1_shows_qdrant_vector_port_bridge():
-    result = run_qdrant_example()
-
-    assert result["approach"]["contract"]
-    assert result["hits"] == ["doc-1"]
-    assert result["upsert"]["written"] == 2
-    assert result["deleted_by_id"]["deleted"] == 1
-    assert result["deleted_by_filter"]["status"] == "ok"
-    assert result["doctor"]["status"] == "ok"
-    assert result["inspect"]["options"]["url_env"] == "***"
-    assert result["inspect"]["options"]["api_key"] == "***"
-    assert "qdrant-secret" not in repr(result)
 
 
 def test_example_7_keeps_example_1_wsgi_foundation():

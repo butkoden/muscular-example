@@ -3,49 +3,53 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 from typing import cast
+from uuid import uuid4
 
-from muscles_data import DataCapability
-from muscles_data.catalog import DataAdapterCatalog
-from muscles_data.config import DataConfig
 from muscles_data.ports import DocumentStorePort
-from muscles_data.runtime import DataRuntime
 from muscles_data_mongodb import MongoDocumentStoreFactory
 
 from example_data_common import development_approach
-from example_data_common.fakes import FakeMongoClient
+from example_data_common.runtime import build_runtime, local_endpoint
 
 
 def run_example() -> dict:
-    client = FakeMongoClient()
-    catalog = DataAdapterCatalog.with_defaults()
-    catalog.register(MongoDocumentStoreFactory(client_factory=lambda _config: client))
-    runtime = DataRuntime(
-        config=DataConfig.from_raw(
-            {"data": {"resources": {"mongo.content": {"type": "mongodb", "url": "mongodb://user:mongo-secret@localhost:27017", "database": "content", "max_limit": 5, "timeout": 1, "native_client": True}}}}
-        ),
-        catalog=catalog,
+    """Run document operations against a live MongoDB service."""
+
+    collection = f"profiles_{uuid4().hex[:12]}"
+    runtime = build_runtime(
+        "mongo.content",
+        {
+            "type": "mongodb",
+            "url": local_endpoint("MONGODB_URL"),
+            "database": "muscular_example",
+            "max_limit": 10,
+            "native_client": False,
+        },
+        MongoDocumentStoreFactory(),
     )
+    try:
+        initialized_before = runtime.list_resources()[0]["initialized"]
+        store = cast(DocumentStorePort, runtime.require_port("mongo.content", DocumentStorePort))
+        upsert = store.upsert_document(collection, "denis", {"name": "Denis", "role": "developer"})
+        found = store.get_document(collection, "denis")
+        store.upsert_document(collection, "reader", {"name": "Reader", "role": "developer"})
+        listed = store.find_documents(collection, filters={"role": "developer"}, limit=10)
+        deleted = store.delete_document(collection, "reader")
+        store.delete_document(collection, "denis")
 
-    initialized_before = runtime.list_resources()[0]["initialized"]
-    store = cast(DocumentStorePort, runtime.require_port("mongo.content", DocumentStorePort))
-    upsert = store.upsert_document("profiles", "denis", {"name": "Denis", "role": "developer"})
-    found = store.get_document("profiles", "denis")
-    store.upsert_document("profiles", "reader", {"name": "Reader", "role": "developer"})
-    listed = store.find_documents("profiles", filters={"role": "developer"}, limit=10)
-    deleted = store.delete_document("profiles", "reader")
-    native = runtime.require_resource("mongo.content", DataCapability.NATIVE_CLIENT).native_client()
-
-    return {
-        "approach": development_approach(),
-        "initialized_before": initialized_before,
-        "upsert": asdict(upsert),
-        "found": found,
-        "listed_names": [item["name"] for item in listed],
-        "deleted": asdict(deleted),
-        "native_type": native.__class__.__name__,
-        "inspect": runtime.inspect_resource("mongo.content"),
-        "doctor": runtime.doctor(),
-    }
+        return {
+            "backend": "mongodb",
+            "approach": development_approach(),
+            "initialized_before": initialized_before,
+            "upsert": asdict(upsert),
+            "found": dict(found or {}),
+            "listed_names": sorted(str(item["name"]) for item in listed),
+            "deleted": asdict(deleted),
+            "inspect": runtime.inspect_resource("mongo.content"),
+            "doctor": runtime.doctor(),
+        }
+    finally:
+        runtime.close()
 
 
 def main() -> None:

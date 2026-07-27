@@ -244,8 +244,9 @@ Open:
 
 ### Adapter-specific data examples
 
-Each real backend adapter has its own small package so the core `example_7`
-does not grow vendor dependencies:
+Each real backend adapter has its own small package. The examples import only
+`muscles-data` ports and the corresponding adapter factory; vendor clients and
+database request details stay inside those packages:
 
 - `example_data_elasticsearch_1`: `SearchIndexPort` through
   [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
@@ -262,17 +263,25 @@ does not grow vendor dependencies:
 - `example_data_s3_1`: `ObjectStorePort` through
   [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
 
-Run them:
+Start the real local services:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-elasticsearch/src:. python3 -m example_data_elasticsearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-opensearch/src:. python3 -m example_data_opensearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-redis/src:. python3 -m example_data_redis_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-sqlalchemy/src:. python3 -m example_data_sqlalchemy_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-qdrant/src:. python3 -m example_data_qdrant_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_data_mongodb_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-s3/src:. python3 -m example_data_s3_1.data_ports
+docker compose -f docker-compose.data.yml up -d
+python3 -m pip install -r requirements.txt
+./scripts/run-data-example.sh elasticsearch
+./scripts/run-data-example.sh opensearch
+./scripts/run-data-example.sh qdrant
+./scripts/run-data-example.sh redis
+./scripts/run-data-example.sh mongodb
+./scripts/run-data-example.sh s3
+./scripts/run-data-example.sh sqlalchemy
 ```
+
+Each command performs real writes, reads/searches, deletes and diagnostics
+through the typed ports. Endpoints can be overridden with the environment
+variables used by the adapter configuration (`ELASTICSEARCH_URL`,
+`OPENSEARCH_URL`, `QDRANT_URL`, `REDIS_URL`, `MONGODB_URL`,
+`S3_ENDPOINT_URL`, and `SQLALCHEMY_POSTGRES_URL`).
 
 ## Tests
 
@@ -288,6 +297,13 @@ examples executable.
 
 ```bash
 docker compose up --build
+```
+
+The application stack above is separate from the real data stack used by the
+adapter examples. Stop it with:
+
+```bash
+docker compose -f docker-compose.data.yml down
 ```
 
 ## Project Guides
