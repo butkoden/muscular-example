@@ -80,6 +80,7 @@ class FakeRedisClient:
     def __init__(self) -> None:
         self.values: dict[str, Any] = {}
         self.streams: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+        self.consumer_groups: list[dict[str, Any]] = []
 
     def set(self, name: str, value, **kwargs):
         if kwargs.get("nx") and name in self.values:
@@ -118,10 +119,23 @@ class FakeRedisClient:
             messages = [
                 (message_id, fields)
                 for message_id, fields in self.streams.get(name, [])
-                if cursor in {"0", "0-0"} or message_id > cursor
+                if cursor in {"0", "0-0", ">"} or message_id > cursor
             ]
             output.append((name, messages[:count]))
         return output
+
+    def xgroup_create(self, name: str, groupname: str, id: str = "0-0", mkstream: bool = False):
+        self.consumer_groups.append({"name": name, "groupname": groupname, "id": id, "mkstream": mkstream})
+
+    def xreadgroup(
+        self,
+        _groupname: str,
+        _consumername: str,
+        streams: dict[str, str],
+        count: int | None = None,
+        block: int | None = None,
+    ):
+        return self.xread(streams, count=count, block=block)
 
     def xack(self, name: str, _groupname: str, *ids: str) -> int:
         known = {message_id for message_id, _fields in self.streams.get(name, [])}
