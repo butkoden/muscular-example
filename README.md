@@ -270,7 +270,7 @@ curl -X POST http://localhost:8080/actions/bookings.create \
 Run the CLI projection:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-cli/src:../muscles-mcp/src:. muscles action run \
+PYTHONPATH=../muscles/src:../muscles-asgi/src:../muscles-cli/src:../muscles-mcp/src:. muscles action run \
   bookings.create --app example_8.booking_app:app \
   --payload-json '{"title":"Discovery call","guest_count":2}' --json
 ```
