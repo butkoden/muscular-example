@@ -213,8 +213,9 @@ PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
 
 ## Separate Data Adapter Examples
 
-Each adapter has its own `example_data_[adapter]_1` package, so dependency on a
-specific database does not leak into the core example:
+Each adapter has its own `example_data_[adapter]_1` package. Examples import
+only `muscles-data` ports and the corresponding adapter factory; vendor clients
+and database request details stay inside those packages:
 
 - `example_data_elasticsearch_1`: `SearchIndexPort` through
   [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
@@ -231,17 +232,22 @@ specific database does not leak into the core example:
 - `example_data_s3_1`: `ObjectStorePort` through
   [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
 
-Run:
+Start the real local services and run an example:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-elasticsearch/src:. python3 -m example_data_elasticsearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-opensearch/src:. python3 -m example_data_opensearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-redis/src:. python3 -m example_data_redis_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-sqlalchemy/src:. python3 -m example_data_sqlalchemy_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-qdrant/src:. python3 -m example_data_qdrant_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_data_mongodb_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-s3/src:. python3 -m example_data_s3_1.data_ports
+docker compose -f docker-compose.data.yml up -d
+python3 -m pip install -r requirements.txt
+./scripts/run-data-example.sh elasticsearch
+./scripts/run-data-example.sh opensearch
+./scripts/run-data-example.sh qdrant
+./scripts/run-data-example.sh redis
+./scripts/run-data-example.sh mongodb
+./scripts/run-data-example.sh s3
+./scripts/run-data-example.sh sqlalchemy
 ```
+
+Every command performs real backend operations through typed ports. Endpoint
+variables can be overridden without changing the example code.
 
 ## Reading Order
 

@@ -15,6 +15,9 @@ py-modules = []
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "integration: tests that require the Docker-backed data example stack",
+]
 pythonpath = [
   "../muscles/src",
   "../muscles-asgi/src",

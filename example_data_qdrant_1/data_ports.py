@@ -3,46 +3,60 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 from typing import cast
+from uuid import uuid4
 
-from muscles_data.catalog import DataAdapterCatalog
-from muscles_data.config import DataConfig
 from muscles_data.ports import VectorSearchPort
 from muscles_data.runtime import DataRuntime
 from muscles_data_qdrant import QdrantVectorFactory
 
 from example_data_common import development_approach
-from example_data_common.fakes import FakeQdrantClient, FakeQdrantModels
+from example_data_common.runtime import build_runtime, local_endpoint
 
 
 def run_example() -> dict:
-    client = FakeQdrantClient()
-    catalog = DataAdapterCatalog.with_defaults()
-    catalog.register(QdrantVectorFactory(client_factory=lambda _config: client, models_provider=lambda: FakeQdrantModels))
-    runtime = DataRuntime(
-        config=DataConfig.from_raw(
-            {"data": {"resources": {"vector.docs": {"type": "qdrant", "url_env": "QDRANT_URL", "api_key": "qdrant-secret", "collection": "docs", "vector_size": 2, "distance": "cosine", "timeout": 1}}}}
-        ),
-        catalog=catalog,
+    """Run vector write/search/delete operations against a live Qdrant service."""
+
+    document_id = f"example-{uuid4().hex[:12]}"
+    second_id = f"example-{uuid4().hex[:12]}"
+    runtime = build_runtime(
+        "vector.docs",
+        {
+            "type": "qdrant",
+            "url": local_endpoint("QDRANT_URL"),
+            "collection": "muscular-example-vectors",
+            "vector_size": 3,
+            "distance": "cosine",
+            "payload_indexes": ["section"],
+            "native_client": False,
+        },
+        QdrantVectorFactory(),
     )
+    try:
+        initialized_before = runtime.list_resources()[0]["initialized"]
+        vector = cast(VectorSearchPort, runtime.require_port("vector.docs", VectorSearchPort))
+        upsert = vector.upsert_vectors(
+            [
+                {"id": document_id, "vector": [1.0, 0.0, 0.0], "payload": {"section": "examples"}},
+                {"id": second_id, "vector": [0.0, 1.0, 0.0], "payload": {"section": "other"}},
+            ],
+            options={"wait": True},
+        )
+        hits = vector.search_vectors([1.0, 0.0, 0.0], filters={"section": "examples"}, limit=1)
+        deleted = vector.delete_vectors(ids=[document_id, second_id], options={"wait": True})
 
-    vector = cast(VectorSearchPort, runtime.require_port("vector.docs", VectorSearchPort))
-    upsert = vector.upsert_vectors([
-        {"id": "doc-1", "vector": [0.9, 0.1], "payload": {"section": "docs"}},
-        {"id": "doc-2", "vector": [0.1, 0.9], "payload": {"section": "notes"}},
-    ])
-    hits = [hit.id for hit in vector.search_vectors([1.0, 0.0], filters={"section": "docs"}, limit=1)]
-    deleted_by_id = vector.delete_vectors(ids=["doc-2"])
-    deleted_by_filter = vector.delete_vectors(filters={"section": "notes"})
-
-    return {
-        "approach": development_approach(),
-        "hits": hits,
-        "upsert": asdict(upsert),
-        "deleted_by_id": asdict(deleted_by_id),
-        "deleted_by_filter": asdict(deleted_by_filter),
-        "inspect": runtime.inspect_resource("vector.docs"),
-        "doctor": runtime.doctor(),
-    }
+        return {
+            "backend": "qdrant",
+            "approach": development_approach(),
+            "initialized_before": initialized_before,
+            "document_id": document_id,
+            "hits": [hit.id for hit in hits],
+            "upsert": asdict(upsert),
+            "deleted": asdict(deleted),
+            "inspect": runtime.inspect_resource("vector.docs"),
+            "doctor": runtime.doctor(),
+        }
+    finally:
+        runtime.close()
 
 
 def main() -> None:

@@ -2,51 +2,66 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import json
+import os
 from typing import cast
+from uuid import uuid4
 
-from muscles_data import DataCapability
-from muscles_data.catalog import DataAdapterCatalog
-from muscles_data.config import DataConfig
 from muscles_data.ports import ObjectStorePort
-from muscles_data.runtime import DataRuntime
 from muscles_data_s3 import S3ObjectStoreFactory
 
 from example_data_common import development_approach
-from example_data_common.fakes import FakeS3Client
+from example_data_common.runtime import build_runtime, local_endpoint
 
 
 def run_example() -> dict:
-    client = FakeS3Client()
-    catalog = DataAdapterCatalog.with_defaults()
-    catalog.register(S3ObjectStoreFactory(client_factory=lambda _config: client))
-    runtime = DataRuntime(
-        config=DataConfig.from_raw(
-            {"data": {"resources": {"objects.docs": {"type": "s3", "endpoint_url": "https://user:s3-secret@s3.example", "bucket": "documents", "region_name": "us-east-1", "prefix": "raw", "max_keys": 5, "native_client": True}}}}
-        ),
-        catalog=catalog,
+    """Run object put/get/list/delete operations against a live S3-compatible service."""
+
+    prefix = f"docs/{uuid4().hex[:12]}"
+    first_key = f"{prefix}/readme.txt"
+    second_key = f"{prefix}/guide.txt"
+    runtime = build_runtime(
+        "objects.docs",
+        {
+            "type": "s3",
+            "endpoint_url": local_endpoint("S3_ENDPOINT_URL"),
+            "bucket": os.getenv("S3_BUCKET", "muscular-example"),
+            "region_name": "us-east-1",
+            "aws_access_key_id": os.getenv("S3_ACCESS_KEY", "minioadmin"),
+            "aws_secret_access_key": os.getenv("S3_SECRET_KEY", "minioadmin"),
+            "prefix": "raw",
+            "max_keys": 10,
+            "addressing_style": "path",
+            "native_client": False,
+        },
+        S3ObjectStoreFactory(),
     )
+    try:
+        initialized_before = runtime.list_resources()[0]["initialized"]
+        objects = cast(ObjectStorePort, runtime.require_port("objects.docs", ObjectStorePort))
+        put = objects.put_object(first_key, b"hello", content_type="text/plain", metadata={"owner": "example"})
+        blob = objects.get_object(first_key)
+        objects.put_object(second_key, b"guide")
+        listed = objects.list_objects(prefix=prefix, limit=10)
+        deleted = objects.delete_object(second_key)
+        inspection = runtime.inspect_resource("objects.docs")
 
-    initialized_before = runtime.list_resources()[0]["initialized"]
-    objects = cast(ObjectStorePort, runtime.require_port("objects.docs", ObjectStorePort))
-    put = objects.put_object("docs/readme.txt", b"hello", content_type="text/plain", metadata={"owner": "denis"})
-    blob = objects.get_object("docs/readme.txt")
-    objects.put_object("docs/guide.txt", b"guide")
-    listed = objects.list_objects(prefix="docs", limit=10)
-    deleted = objects.delete_object("docs/guide.txt")
-    native = runtime.require_resource("objects.docs", DataCapability.NATIVE_CLIENT).native_client()
-
-    return {
-        "approach": development_approach(),
-        "initialized_before": initialized_before,
-        "put": asdict(put),
-        "blob": {"key": blob.key, "content": blob.content.decode("utf-8"), "content_type": blob.content_type},
-        "listed_keys": [item.key for item in listed],
-        "stored_keys": [key for _bucket, key in sorted(client.objects)],
-        "deleted": asdict(deleted),
-        "native_type": native.__class__.__name__,
-        "inspect": runtime.inspect_resource("objects.docs"),
-        "doctor": runtime.doctor(),
-    }
+        return {
+            "backend": "s3",
+            "approach": development_approach(),
+            "initialized_before": initialized_before,
+            "put": asdict(put),
+            "blob": {"key": blob.key, "content": blob.content.decode("utf-8"), "content_type": blob.content_type},
+            "listed_keys": [item.key for item in listed],
+            "second_key": second_key,
+            "deleted": asdict(deleted),
+            "inspect": {
+                "status": inspection["status"],
+                "details": inspection["details"],
+            },
+            "doctor": runtime.doctor(),
+        }
+    finally:
+        runtime.close()
 
 
 def main() -> None:

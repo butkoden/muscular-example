@@ -212,8 +212,9 @@ PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
 
 ## Примеры отдельных data adapters
 
-Каждый adapter вынесен в свой маленький пример `example_data_[adapter]_1`,
-чтобы зависимость от конкретной базы не попадала в core example:
+Каждый adapter вынесен в свой маленький пример `example_data_[adapter]_1`.
+Примеры импортируют только typed ports из `muscles-data` и factory конкретного
+adapter; vendor-клиенты и детали запросов к базе остаются внутри этих пакетов:
 
 - `example_data_elasticsearch_1`: `SearchIndexPort` через
   [`muscles-data-elasticsearch`](https://github.com/butkoden/muscles-data-elasticsearch);
@@ -230,17 +231,22 @@ PYTHONPATH=../muscles/src:../muscles-data/src:. python3 -m example_7.data_ports
 - `example_data_s3_1`: `ObjectStorePort` через
   [`muscles-data-s3`](https://github.com/butkoden/muscles-data-s3).
 
-Запуск:
+Запусти реальные сервисы и пример:
 
 ```bash
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-elasticsearch/src:. python3 -m example_data_elasticsearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-opensearch/src:. python3 -m example_data_opensearch_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-redis/src:. python3 -m example_data_redis_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-sqlalchemy/src:. python3 -m example_data_sqlalchemy_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-qdrant/src:. python3 -m example_data_qdrant_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-mongodb/src:. python3 -m example_data_mongodb_1.data_ports
-PYTHONPATH=../muscles/src:../muscles-data/src:../muscles-data-s3/src:. python3 -m example_data_s3_1.data_ports
+docker compose -f docker-compose.data.yml up -d
+python3 -m pip install -r requirements.txt
+./scripts/run-data-example.sh elasticsearch
+./scripts/run-data-example.sh opensearch
+./scripts/run-data-example.sh qdrant
+./scripts/run-data-example.sh redis
+./scripts/run-data-example.sh mongodb
+./scripts/run-data-example.sh s3
+./scripts/run-data-example.sh sqlalchemy
 ```
+
+Каждая команда выполняет реальные операции с backend через typed ports.
+Endpoints можно переопределить переменными окружения, не меняя код примеров.
 
 ## Как читать код
 
